@@ -8,11 +8,14 @@
 @media (min-width: 1000px) {
   .zgodba { grid-template-columns: 1fr 1fr; gap: 5rem; }
 }
-.nacela { display: grid; gap: 0; border-top: 2px solid var(--crnilo); }
-.nacela > div { display: grid; gap: 0.7rem; padding: 1.6rem 0; border-bottom: 1px solid var(--crta-mocna); }
-.nacela dd { color: var(--crnilo-2); max-width: 44ch; }
+.nacelaMreza { display: grid; gap: 2rem; }
+.nacela { display: grid; gap: 0; border-top: 2px solid var(--crnilo); margin: 0; }
+.nacela > div { display: grid; gap: 0.6rem; padding: 1.5rem 0; border-bottom: 1px solid var(--crta-mocna); }
+.nacela dt { display: grid; gap: 0.3rem; }
+.nIndeks { color: var(--zelena-temna); }
+.nacela dd { margin: 0; color: var(--crnilo-2); max-width: 52ch; }
 @media (min-width: 900px) {
-  .nacela { grid-template-columns: repeat(3, 1fr); }
-  .nacela > div { padding: 2rem 2rem 2rem 0; border-bottom: 0; }
-  .nacela > div + div { padding-left: 2rem; border-left: 1px solid var(--crta-mocna); }
+  .nacelaMreza { grid-template-columns: 0.8fr 1.4fr; gap: 5rem; align-items: start; }
+  .nacelaMreza > h2 { position: sticky; top: calc(var(--glava) + 2rem); }
+  .nacela > div { grid-template-columns: 1fr 1.2fr; gap: 2rem; padding: 2rem 0; align-items: baseline; }
 }

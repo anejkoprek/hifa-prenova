@@ -1,7 +1,5 @@
-.glavaSekcije { display: grid; gap: 1rem; margin-bottom: clamp(2rem, 1.5rem + 2vw, 3.5rem); }
-@media (min-width: 900px) {
-  .glavaSekcije { grid-template-columns: 1.1fr 1fr; align-items: end; gap: 3rem; }
-}
+.glavaSekcije { display: grid; gap: 0.8rem; margin-bottom: clamp(2rem, 1.5rem + 2vw, 3.5rem); }
+.glavaSekcije > p { max-width: 58ch; }
 
 /* ---------- postopek ---------- */
 .postopek { background: var(--list); border-block: 1px solid var(--crta); }
@@ -26,6 +24,7 @@
   position: absolute;
   left: 0; top: 0;
   width: 44px; height: 44px;
+  z-index: 1;
   display: grid; place-items: center;
   border: 1.5px solid var(--crnilo);
   border-radius: 50%;
@@ -39,6 +38,28 @@
   .korak { padding: 4.2rem 1.4rem 0 0; }
   .korak::before { left: 44px; right: 0; top: 21px; bottom: auto; width: auto; height: 1px; }
   .korak:last-child::before { display: block; right: 40%; }
+  /* zelena črta se ob pomikanju nariše čez terminski plan */
+  .koraki { position: relative; }
+  .koraki::after {
+    content: '';
+    position: absolute;
+    left: 44px; right: 8%; top: 21px;
+    height: 2px; margin-top: -0.5px;
+    background: var(--zelena);
+    transform-origin: left;
+    transform: scaleX(0);
+    pointer-events: none;
+  }
+  @supports (animation-timeline: view()) {
+    .koraki::after { animation: crta linear both; animation-timeline: view(); animation-range: entry 60% cover 55%; }
+  }
+  @supports not (animation-timeline: view()) {
+    .koraki::after { display: none; }
+  }
+}
+@keyframes crta { to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .koraki::after { animation: none !important; transform: scaleX(1); }
 }
 
 /* ---------- mnenja ---------- */
@@ -48,7 +69,7 @@
 .mnenje figcaption { font-size: var(--step--1); color: var(--jeklo); }
 .mnenje figcaption strong { color: var(--crnilo); font-weight: 680; }
 .glavno blockquote p {
-  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.3rem);
+  font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.9rem);
   font-stretch: 108%;
   font-weight: 620;
   letter-spacing: -0.02em;

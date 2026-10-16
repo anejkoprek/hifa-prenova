@@ -58,12 +58,15 @@ export default function ONas() {
       </section>
 
       <section className="sekcija" aria-labelledby="nacela-h">
-        <div className="wrap">
-          <h2 className="visually-hidden" id="nacela-h">Kako delamo</h2>
+        <div className={`wrap ${s.nacelaMreza}`}>
+          <h2 className="h2" id="nacela-h">Kako delamo</h2>
           <dl className={s.nacela}>
-            {nacela.map(([n, o]) => (
-              <div key={n}>
-                <dt className="h3">{n}</dt>
+            {nacela.map(([n, o], i) => (
+              <div key={n} className="razkrij" style={{ transitionDelay: `${i * 70}ms` }}>
+                <dt>
+                  <span className={`napis ${s.nIndeks}`}>0{i + 1}</span>
+                  <span className="h3">{n}</span>
+                </dt>
                 <dd>{o}</dd>
               </div>
             ))}

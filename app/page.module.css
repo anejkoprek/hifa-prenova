@@ -1,3 +1,28 @@
+/* ---------- dejstva ---------- */
+.dejstva { border-bottom: 1px solid var(--crta); }
+.dejstvaMreza {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-block: clamp(1.8rem, 1.2rem + 2vw, 3rem);
+  gap: 2rem 1.5rem;
+}
+.dejstvaMreza > div { display: grid; gap: 0.35rem; align-content: start; padding-left: 1rem; border-left: 1px solid var(--crta-mocna); }
+.dejstvaMreza dt { color: var(--jeklo); }
+.stevilka {
+  margin: 0;
+  font-size: clamp(1.9rem, 1.3rem + 2.2vw, 3.3rem);
+  font-weight: 780;
+  font-stretch: 118%;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dejstvoOpis { margin: 0.2rem 0 0; color: var(--crnilo-2); font-size: var(--step--1); max-width: 30ch; text-wrap: pretty; }
+@media (min-width: 900px) {
+  .dejstvaMreza { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 /* ---------- detajli A–D ---------- */
 .detajli > .detajl { padding-block: calc(var(--sekcija) * 0.68); }
 .detajl + .detajl { border-top: 1px solid var(--crta); }
@@ -57,6 +82,29 @@
   .k2, .k3 { aspect-ratio: auto; height: 100%; }
 }
 
+/* C in D v paru: fotografija, čez rob postavljena risba pročelja */
+.par { border-top: 1px solid var(--crta); }
+.parMreza { display: grid; gap: 4rem; }
+.parDetajl { display: grid; gap: 1.2rem; align-content: start; }
+.parDetajl :global(.detajl) { --d: clamp(40px, 34px + 1vw, 52px); }
+.parSlike { position: relative; margin-bottom: 1.6rem; padding-right: 12%; }
+.parFoto { aspect-ratio: 4 / 3; }
+.parRisba {
+  position: absolute;
+  right: 0; bottom: -1.6rem;
+  width: 38%;
+  aspect-ratio: 4 / 3;
+  box-shadow: 0 0 0 1px var(--antracit), 0 18px 40px -18px rgb(56 62 66 / 0.45);
+  transition: transform 500ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .parDetajl:hover .parRisba { transform: translateY(-6px); }
+}
+@media (min-width: 1000px) {
+  .parMreza { grid-template-columns: 1fr 1fr; gap: 5rem; }
+  .parDetajl:nth-child(2) { margin-top: 5rem; }
+}
+
 /* ---------- pas: konstrukcije in holler ---------- */
 .pas { background: var(--antracit); color: var(--na-antracitu); padding-block: clamp(3rem, 2rem + 4vw, 5.5rem); }
 .pasMreza { display: grid; gap: 1.5rem; }
@@ -91,7 +139,7 @@
 .ppBesedilo :global(.povezava) { justify-self: start; }
 @media (min-width: 1000px) {
   .ppMreza { grid-template-columns: 0.75fr 1.9fr; gap: 4.5rem; }
-  .ppBesedilo { position: sticky; top: calc(var(--glava) + 2rem); }
+  .ppBesedilo { position: sticky; top: calc(var(--glava) + 2rem); align-self: start; }
 }
 
 /* ---------- materiali: RAL karta ---------- */
