@@ -14,7 +14,7 @@ export default function KonfiguratorStran() {
     <>
       <div className={`wrap ${s.glava}`}>
         <h1 className="h2">Oblikujte ograjo ali nadstrešek</h1>
-        <p className="muted">Risba se spreminja z vsako izbiro. Na koncu izbiro pošljete in pripravimo informativno ponudbo.</p>
+        <p className="muted">Risba in 3D model se spreminjata z vsako izbiro. Model lahko obračate in si ga ogledate z vseh strani. Na koncu izbiro pošljete in pripravimo informativno ponudbo.</p>
       </div>
       <Konfigurator />
     </>

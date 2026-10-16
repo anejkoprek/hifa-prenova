@@ -1,0 +1,51 @@
+.scena { position: relative; width: 100%; height: 100%; }
+.platno { position: absolute; inset: 0; cursor: grab; touch-action: none; }
+.platno[data-vlece] { cursor: grabbing; }
+.platno :global(canvas) { display: block; width: 100% !important; height: 100% !important; }
+
+.namig {
+  position: absolute;
+  left: 0.6rem; bottom: 0.6rem;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--r-ctrl);
+  background: rgb(251 251 249 / 0.88);
+  color: var(--crnilo-2);
+  font-size: 0.78rem;
+  pointer-events: none;
+  transition: opacity 200ms var(--ease-out);
+}
+.platno[data-vlece] ~ .namig { opacity: 0; }
+
+.pogled {
+  position: absolute;
+  right: 0.6rem; bottom: 0.6rem;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  min-height: 38px;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--crta-mocna);
+  border-radius: var(--r-ctrl);
+  background: var(--bela);
+  font-size: var(--step--1);
+  font-weight: 620;
+  touch-action: manipulation;
+  transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.pogled:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .pogled:hover { background: var(--list); }
+}
+
+.napaka {
+  display: grid; place-items: center;
+  height: 100%;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--crnilo-2);
+  font-size: var(--step--1);
+}
+
+@media (max-width: 640px) {
+  .namig { display: none; }
+  .pogled { min-height: 34px; padding: 0.25rem 0.6rem; }
+}

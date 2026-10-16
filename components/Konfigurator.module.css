@@ -31,6 +31,40 @@
 .risbaStolpec { min-width: 0; }
 .risbaLepljiva { display: grid; border: 1px solid var(--crnilo); border-radius: var(--r-media); overflow: hidden; background: var(--bela); }
 .platno { padding: clamp(0.5rem, 0.3rem + 1vw, 1.2rem); }
+
+/* preklop risba / 3D */
+.pogledi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--crnilo);
+}
+.pogledi button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  min-height: 42px;
+  font-size: var(--step--1);
+  font-weight: 640;
+  color: var(--crnilo-2);
+  background: var(--list);
+  touch-action: manipulation;
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.pogledi button + button { border-left: 1px solid var(--crta-mocna); }
+.pogledi button[aria-pressed='true'] { background: var(--bela); color: var(--crnilo); box-shadow: inset 0 -3px 0 var(--zelena); }
+@media (hover: hover) and (pointer: fine) {
+  .pogledi button:not([aria-pressed='true']):hover { background: var(--papir-2); }
+}
+.okvir3d { position: relative; aspect-ratio: 16 / 11; background: #eceeec; animation: pojav3d 220ms var(--ease-out); }
+@keyframes pojav3d { from { opacity: 0; } }
+.nalaganje3d {
+  position: absolute; inset: 0;
+  display: grid; place-content: center; justify-items: center; gap: 0.5rem;
+  color: var(--jeklo); font-size: var(--step--1);
+}
+.nalaganje3d svg { animation: vrti3d 1.6s var(--ease-in-out) infinite; }
+@keyframes vrti3d { 50% { transform: rotate(90deg); } 100% { transform: rotate(90deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .okvir3d, .nalaganje3d svg { animation: none; }
+}
 .risba :global(svg) { width: 100%; height: auto; display: block; }
 .glavaRisbe { display: grid; border-top: 1px solid var(--crnilo); }
 .grNaslov { display: grid; gap: 0.15rem; padding: 0.8rem 1rem; }
@@ -85,6 +119,8 @@
   .glavaRisbe { display: none; }
   .platno { padding: 0.3rem; }
   .risba :global(svg) { width: 100%; height: min(24vh, 46vw); }
+  .okvir3d { aspect-ratio: auto; height: min(34vh, 72vw); }
+  .pogledi button { min-height: 36px; }
 }
 @media (min-width: 1000px) {
   .mreza { grid-template-columns: 1.25fr 1fr; gap: 3rem; }

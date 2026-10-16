@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, LinkSimple, ArrowCounterClockwise } from '@phosphor-icons/react';
+import dynamic from 'next/dynamic';
+import { Check, LinkSimple, ArrowCounterClockwise, Cube, PencilRuler } from '@phosphor-icons/react';
 import Povprasevanje from './Povprasevanje';
 import PolniloIkona from './PolniloIkona';
 import { risiOgrajo } from '@/lib/risbe/ograja';
@@ -30,6 +31,17 @@ import {
 import { polnilaNazivi, polnilaOpisi } from '@/lib/moznosti';
 import { RAL, ralHex } from '@/lib/ral';
 import s from './Konfigurator.module.css';
+
+// three.js se naloži šele ob prvem odprtju 3D pogleda
+const Scena3D = dynamic(() => import('./Scena3D'), {
+  ssr: false,
+  loading: () => (
+    <div className={s.nalaganje3d} role="status">
+      <Cube size={28} weight="duotone" aria-hidden />
+      <span>Nalagam 3D model</span>
+    </div>
+  ),
+});
 
 type Izdelek = 'ograja' | 'nadstresek';
 
@@ -215,6 +227,12 @@ export default function Konfigurator() {
   const [og, setOg] = useState<OgrajaStanje>(privzetaOgraja);
   const [ns, setNs] = useState<NadstresekStanje>(privzetNadstresek);
   const [nalozeno, setNalozeno] = useState(false);
+  const [pogled3d, setPogled3d] = useState(false);
+
+  // na računalniku z miško se konfigurator odpre v 3D, na telefonu z lažjo risbo (3D je en klik stran)
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 1000px) and (pointer: fine)').matches) setPogled3d(true);
+  }, []);
 
   // izbira iz povezave (npr. s pročelja ali deljena povezava); stran je statična, zato beremo v brskalniku
   useEffect(() => {
@@ -352,9 +370,23 @@ export default function Konfigurator() {
         {/* ---------- risba (lepljiva) ---------- */}
         <div className={s.risbaStolpec}>
           <div className={s.risbaLepljiva}>
-            <div className={`platno ${s.platno}`} aria-live="polite">
-              <div key={iskanje} className={s.risba} dangerouslySetInnerHTML={{ __html: risba }} />
+            <div className={s.pogledi} role="group" aria-label="Prikaz">
+              <button type="button" aria-pressed={!pogled3d} onClick={() => setPogled3d(false)}>
+                <PencilRuler size={16} weight="bold" aria-hidden /> Risba
+              </button>
+              <button type="button" aria-pressed={pogled3d} onClick={() => setPogled3d(true)}>
+                <Cube size={16} weight="bold" aria-hidden /> 3D pogled
+              </button>
             </div>
+            {pogled3d ? (
+              <div className={s.okvir3d}>
+                {izdelek === 'ograja' ? <Scena3D izdelek="ograja" ograja={og} /> : <Scena3D izdelek="nadstresek" nadstresek={ns} />}
+              </div>
+            ) : (
+              <div className={`platno ${s.platno}`} aria-live="polite">
+                <div key={iskanje} className={s.risba} dangerouslySetInnerHTML={{ __html: risba }} />
+              </div>
+            )}
             <div className={s.glavaRisbe}>
               <div className={s.grNaslov}>
                 <span className="napis">{izdelek === 'ograja' ? 'Ograja · pogled' : 'Nadstrešek · aksonometrija'}</span>

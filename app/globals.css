@@ -111,6 +111,7 @@
   --glava: 72px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
 
   --z-glava: 40;
