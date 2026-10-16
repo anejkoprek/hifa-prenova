@@ -1,0 +1,43 @@
+.galerija { display: grid; gap: 1.4rem; }
+.filtri { position: sticky; top: calc(var(--glava) + 8px); z-index: 5; padding: 0.5rem 0; background: var(--papir); }
+.stevec { font-weight: 500; color: var(--jeklo); margin-left: 0.15rem; }
+:global(.cip)[aria-pressed="true"] .stevec { color: var(--na-antracitu-2); }
+
+.mreza {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-flow: dense;
+  gap: 8px;
+}
+@media (min-width: 760px) {
+  .mreza { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+}
+@media (min-width: 1100px) {
+  .mreza { grid-template-columns: repeat(4, 1fr); }
+}
+.plosca { aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--papir-2); }
+.plosca[data-velika] { grid-column: span 2; grid-row: span 2; }
+.gumb { position: relative; display: block; width: 100%; height: 100%; touch-action: manipulation; }
+.img { object-fit: cover; transition: transform 700ms var(--ease-out); }
+.lupa {
+  position: absolute;
+  right: 10px; bottom: 10px;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: rgb(251 251 249 / 0.92);
+  color: var(--crnilo);
+  opacity: 0;
+  translate: 0 6px;
+  transition: opacity 200ms var(--ease-out), translate 200ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .gumb:hover .img { transform: scale(1.035); }
+  .gumb:hover .lupa { opacity: 1; translate: 0 0; }
+}
+.gumb:focus-visible { outline-offset: -3px; }
+.gumb:focus-visible .lupa { opacity: 1; translate: 0 0; }
+
+.vec { display: flex; justify-content: center; padding-top: 0.6rem; }

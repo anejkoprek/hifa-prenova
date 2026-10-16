@@ -1,0 +1,97 @@
+.noga {
+  background: var(--antracit);
+  color: var(--na-antracitu);
+  padding-top: clamp(3.5rem, 2.5rem + 4vw, 6rem);
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+.noga a { text-decoration: none; }
+.noga :global(.napis) { color: var(--na-antracitu-2); margin-bottom: 1rem; }
+
+/* list kot glava risbe: polja, ločena s tankimi črtami */
+.mreza {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr;
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+}
+.mreza > * { padding: 1.6rem 0; border-bottom: 1px solid rgb(255 255 255 / 0.16); }
+
+.geslo {
+  font-size: var(--step-2);
+  font-stretch: 112%;
+  font-weight: 680;
+  letter-spacing: -0.014em;
+  line-height: 1.15;
+  max-width: 22ch;
+}
+.kontakti { display: grid; gap: 0.5rem; margin-top: 1.4rem; }
+.kontakti a {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-size: var(--step-1); font-weight: 620; min-height: 40px;
+}
+
+.blok ul { list-style: none; padding: 0; display: grid; gap: 0.15rem; }
+.blok li a {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  min-height: 36px; color: var(--na-antracitu-2);
+  transition: color 150ms var(--ease-out);
+}
+.blok address { font-style: normal; color: var(--na-antracitu-2); line-height: 1.65; }
+.cas { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.8rem; color: var(--na-antracitu-2); font-size: var(--step--1); }
+.zemljevid {
+  display: inline-block; margin-top: 0.8rem; font-weight: 600; font-size: var(--step--1);
+  border-bottom: 1.5px solid var(--zelena); padding-bottom: 1px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .blok li a:hover, .kontakti a:hover { color: #fff; }
+}
+
+.noo {
+  display: grid;
+  gap: 0.9rem;
+  align-items: center;
+  font-size: var(--step--2);
+  color: var(--na-antracitu-2);
+  line-height: 1.45;
+}
+.nooLogo {
+  position: relative;
+  display: block;
+  width: min(280px, 100%);
+  aspect-ratio: 551 / 117;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.spodaj {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.6rem;
+  align-items: center;
+  padding-top: 1.4rem;
+  font-size: var(--step--1);
+  color: var(--na-antracitu-2);
+}
+.spodaj ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.spodaj a, .spodaj button { color: inherit; font-size: inherit; min-height: 36px; display: inline-flex; align-items: center; }
+.izdelava { margin-left: auto; display: inline-flex; align-items: center; gap: 0.7rem; }
+.izdelava a { display: inline-flex; align-items: center; min-height: 40px; opacity: 0.85; transition: opacity 160ms var(--ease-out); }
+.izdelava img { height: 18px; width: auto; }
+@media (hover: hover) and (pointer: fine) {
+  .izdelava a:hover { opacity: 1; }
+}
+
+@media (min-width: 760px) {
+  .mreza { grid-template-columns: 1.5fr 1fr 1fr 1fr; }
+  .mreza > * { padding: 2rem 1.5rem 2rem 0; border-bottom: 1px solid rgb(255 255 255 / 0.16); }
+  .mreza > * + * { padding-left: 1.5rem; border-left: 1px solid rgb(255 255 255 / 0.16); }
+  .uvod { grid-row: span 2; }
+  .noo { grid-column: 2 / -1; grid-template-columns: 280px 1fr; border-left: 1px solid rgb(255 255 255 / 0.16); }
+}
+@media (max-width: 759px) {
+  .izdelava { margin-left: 0; }
+}
+@media (max-width: 640px) {
+  .noga { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+}

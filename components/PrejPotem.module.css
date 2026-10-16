@@ -1,0 +1,90 @@
+.pp { display: grid; gap: 0.8rem; }
+.okno {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-media);
+  overflow: hidden;
+  background: var(--papir-2);
+  touch-action: pan-y;
+}
+.img { object-fit: cover; }
+.potem { clip-path: inset(0 0 0 var(--poz)); }
+.oznaka {
+  position: absolute;
+  top: 12px;
+  padding: 0.35rem 0.55rem;
+  background: rgb(28 33 36 / 0.78);
+  color: #fff;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.levo { left: 12px; }
+.desno { right: 12px; background: var(--zelena); color: var(--na-zeleni); }
+.crta {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: var(--poz);
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.15);
+  pointer-events: none;
+}
+.rocaj {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 44px; height: 44px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--senca-1);
+}
+.rocaj::before, .rocaj::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  border: 6px solid transparent;
+  translate: 0 -50%;
+}
+.rocaj::before { left: 7px; border-right-color: var(--crnilo); }
+.rocaj::after { right: 7px; border-left-color: var(--crnilo); }
+.range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+.range:focus-visible + * { outline: none; }
+.okno:has(.range:focus-visible) { outline: 2px solid var(--fokus); outline-offset: 3px; }
+
+.pari {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.pari::-webkit-scrollbar { display: none; }
+.par {
+  flex: none;
+  display: grid;
+  grid-template-columns: 52px auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.35rem;
+  border: 1px solid var(--crta-mocna);
+  border-radius: var(--r-ctrl);
+  background: var(--bela);
+  font-size: var(--step--1);
+  font-weight: 580;
+  text-align: left;
+  max-width: 260px;
+  line-height: 1.25;
+  touch-action: manipulation;
+}
+.par[aria-pressed='true'] { border-color: var(--crnilo); box-shadow: inset 0 0 0 1px var(--crnilo); }
+.slicica { position: relative; width: 52px; height: 40px; border-radius: 3px; overflow: hidden; background: var(--papir-2); }
+.slicica img { object-fit: cover; }

@@ -1,0 +1,14 @@
+.seznam { display: grid; gap: 0; margin-bottom: var(--sekcija); }
+.vrstica:first-child { border-top: 2px solid var(--crnilo); }
+.vrstica { display: grid; gap: 1rem; padding: 1.2rem 0; border-bottom: 1px solid var(--crta-mocna); text-decoration: none; }
+.slika { display: block; aspect-ratio: 2000 / 800; border-radius: 8px; overflow: hidden; background: var(--papir-2); }
+.slika img { transition: transform 700ms var(--ease-out); }
+.besedilo { position: relative; display: grid; gap: 0.5rem; align-content: center; padding-right: 3rem; }
+.puscica { position: absolute; right: 0; top: 50%; translate: 0 -50%; transition: transform 240ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .vrstica:hover img { transform: scale(1.04); }
+  .vrstica:hover .puscica { transform: translateX(4px); }
+}
+@media (min-width: 900px) {
+  .vrstica { grid-template-columns: 1.1fr 1fr; gap: 3rem; padding: 1.6rem 0; }
+}

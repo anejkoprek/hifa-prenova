@@ -1,0 +1,31 @@
+.piskotki {
+  position: fixed;
+  z-index: var(--z-piskotki);
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  max-width: 420px;
+  background: var(--bela);
+  border: 1px solid var(--crta);
+  border-radius: var(--r-media);
+  box-shadow: var(--senca-2);
+  padding: 1.1rem 1.15rem 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .piskotki { animation: gor 420ms var(--ease-out) 300ms both; }
+}
+@keyframes gor {
+  from { opacity: 0; transform: translateY(14px); }
+}
+.naslov { font-size: var(--step-0); font-stretch: 108%; font-weight: 700; }
+.besedilo { font-size: var(--step--1); color: var(--crnilo-2); line-height: 1.5; }
+.besedilo a { color: var(--crnilo); font-weight: 600; }
+.izbire { border: 0; padding: 0.3rem 0 0.2rem; display: grid; gap: 0.6rem; }
+.gumbi { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+.gumbi :global(.gumb) { flex: 1 1 auto; }
+@media (max-width: 640px) {
+  /* na telefonu nad mobilno vrstico z gumbi */
+  .piskotki { bottom: calc(76px + env(safe-area-inset-bottom)); }
+}

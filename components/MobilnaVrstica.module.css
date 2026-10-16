@@ -1,0 +1,19 @@
+.vrstica {
+  position: fixed;
+  z-index: var(--z-glava);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.5rem;
+  padding: 0.6rem max(0.75rem, env(safe-area-inset-left)) max(0.6rem, env(safe-area-inset-bottom));
+  background: rgb(228 231 229 / 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--crta);
+}
+.vrstica :global(.gumb--obroba) { --bg: var(--bela); }
+@media (min-width: 641px) {
+  .vrstica { display: none; }
+}

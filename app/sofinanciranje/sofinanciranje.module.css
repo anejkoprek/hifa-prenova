@@ -1,0 +1,10 @@
+.mreza { display: grid; gap: 2.5rem; padding-bottom: var(--sekcija); }
+.podatki { display: grid; border-top: 2px solid var(--crnilo); }
+.podatki > div { display: grid; gap: 0.3rem; padding: 0.9rem 0; border-bottom: 1px solid var(--crta-mocna); }
+.podatki dt { color: var(--jeklo); }
+.podatki dd { font-size: var(--step-1); font-weight: 650; }
+.logo { position: relative; aspect-ratio: 551 / 117; max-width: 560px; background: #fff; border-radius: 8px; }
+@media (min-width: 1000px) {
+  .mreza { grid-template-columns: 1fr 1.6fr; gap: 4rem; }
+  .logo { grid-column: 2; }
+}

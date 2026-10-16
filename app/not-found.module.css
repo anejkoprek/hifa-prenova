@@ -1,0 +1,3 @@
+.stran { display: grid; gap: 1.2rem; justify-items: start; padding-block: clamp(3rem, 2rem + 5vw, 7rem); }
+.risba { width: min(520px, 100%); height: auto; margin-bottom: 1rem; }
+.akcije { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }

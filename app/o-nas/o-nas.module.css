@@ -1,0 +1,18 @@
+.zgodba { display: grid; gap: 2.5rem; align-items: start; }
+.slike { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; align-items: end; }
+.s1 { aspect-ratio: 4 / 5; }
+.s2 { aspect-ratio: 1; margin-bottom: 15%; }
+.besedilo { color: var(--crnilo-2); font-size: var(--step-0); }
+.besedilo h2 { color: var(--crnilo); margin-bottom: 0.4em; }
+.besedilo a { color: var(--zelena-temna); font-weight: 600; }
+@media (min-width: 1000px) {
+  .zgodba { grid-template-columns: 1fr 1fr; gap: 5rem; }
+}
+.nacela { display: grid; gap: 0; border-top: 2px solid var(--crnilo); }
+.nacela > div { display: grid; gap: 0.7rem; padding: 1.6rem 0; border-bottom: 1px solid var(--crta-mocna); }
+.nacela dd { color: var(--crnilo-2); max-width: 44ch; }
+@media (min-width: 900px) {
+  .nacela { grid-template-columns: repeat(3, 1fr); }
+  .nacela > div { padding: 2rem 2rem 2rem 0; border-bottom: 0; }
+  .nacela > div + div { padding-left: 2rem; border-left: 1px solid var(--crta-mocna); }
+}

@@ -1,0 +1,130 @@
+/* ---------- detajli A–D ---------- */
+.detajli > .detajl { padding-block: calc(var(--sekcija) * 0.68); }
+.detajl + .detajl { border-top: 1px solid var(--crta); }
+.dMreza { display: grid; gap: 2.2rem; align-items: center; }
+.dBesedilo { display: grid; gap: 1.2rem; align-content: start; }
+.dBesedilo :global(.detajl) { --d: clamp(40px, 34px + 1vw, 52px); }
+.dOpis { font-size: var(--step-1); color: var(--crnilo-2); line-height: 1.5; max-width: 46ch; }
+.legenda { display: grid; border-top: 1px solid var(--crnilo); margin-top: 0.3rem; }
+.legenda > div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--crta-mocna);
+  align-items: baseline;
+}
+.legenda dt { color: var(--jeklo); }
+.legenda dd { font-weight: 560; }
+.dPovezave { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.4rem; margin-top: 0.5rem; }
+
+.kolaz {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 10px;
+}
+.k1 { grid-column: 1 / -1; aspect-ratio: 16 / 10; }
+.k2, .k3 { aspect-ratio: 4 / 3; }
+
+/* fotografije kot plošče na listu: oster rob, tanek okvir, oznaka detajla */
+.plosca {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--papir-2);
+  box-shadow: 0 0 0 1px var(--antracit);
+}
+.oznakaPlosce {
+  position: absolute;
+  left: 0; bottom: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--bela);
+  color: var(--crnilo);
+  border-top: 1px solid var(--antracit);
+  border-right: 1px solid var(--antracit);
+}
+.risbaPlosca { background: var(--bela); display: grid; place-items: center; }
+
+.oznakaRisbe { position: absolute; right: 0.6rem; top: 0.5rem; color: var(--jeklo); }
+
+@media (min-width: 1000px) {
+  .dMreza { grid-template-columns: 0.9fr 1.25fr; gap: 5rem; }
+  .detajl[data-obrnjen] .dBesedilo { order: 2; }
+  .kolaz { grid-template-columns: 1.6fr 1fr; grid-template-rows: 1fr 1fr; height: clamp(420px, 36vw, 560px); }
+  .k1 { grid-column: 1; grid-row: 1 / 3; aspect-ratio: auto; height: 100%; }
+  .k2, .k3 { aspect-ratio: auto; height: 100%; }
+}
+
+/* ---------- pas: konstrukcije in holler ---------- */
+.pas { background: var(--antracit); color: var(--na-antracitu); padding-block: clamp(3rem, 2rem + 4vw, 5.5rem); }
+.pasMreza { display: grid; gap: 1.5rem; }
+.pasKartica {
+  display: grid;
+  gap: 1.1rem;
+  text-decoration: none;
+  color: inherit;
+}
+.pasSlika { display: block; aspect-ratio: 2000 / 900; border-radius: 2px; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25); overflow: hidden; background: var(--antracit-2); }
+.pasSlika img { transition: transform 800ms var(--ease-out); }
+.pasBesedilo { display: grid; gap: 0.5rem; }
+.pasBesedilo > span:nth-child(2) { color: var(--na-antracitu-2); max-width: 48ch; }
+.pasPovezava {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  justify-self: start; margin-top: 0.3rem;
+  font-weight: 640; border-bottom: 1.5px solid var(--zelena); padding-bottom: 2px;
+}
+.pasPovezava svg { transition: transform 240ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .pasKartica:hover .pasSlika img { transform: scale(1.04); }
+  .pasKartica:hover .pasPovezava svg { transform: translateX(3px); }
+}
+@media (min-width: 900px) {
+  .pasMreza { grid-template-columns: 1fr 1.55fr; gap: 2.5rem; align-items: end; }
+  .pasKartica:first-child .pasSlika { aspect-ratio: 4 / 3; }
+}
+
+/* ---------- prej/potem ---------- */
+.ppMreza { display: grid; gap: 2rem; }
+.ppBesedilo { display: grid; gap: 1rem; align-content: start; }
+.ppBesedilo :global(.povezava) { justify-self: start; }
+@media (min-width: 1000px) {
+  .ppMreza { grid-template-columns: 0.75fr 1.9fr; gap: 4.5rem; }
+  .ppBesedilo { position: sticky; top: calc(var(--glava) + 2rem); }
+}
+
+/* ---------- materiali: RAL karta ---------- */
+.matMreza { display: grid; gap: 2.5rem; align-items: center; }
+.matBesedilo { display: grid; gap: 1.2rem; }
+.karta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.trakBarve {
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  min-height: 150px;
+  background: var(--bela);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.04), 0 8px 20px -14px rgb(0 0 0 / 0.3);
+}
+.barva { background: var(--sw); min-height: 90px; }
+.ralKoda { padding: 0.55rem 0.5rem 0; font-weight: 700; font-stretch: 70%; font-size: var(--step--1); white-space: nowrap; }
+.ralIme { padding: 0 0.5rem 0.6rem; font-size: var(--step--2); font-stretch: 85%; color: var(--jeklo); line-height: 1.25; }
+.kartaOpomba { grid-column: 1 / -1; margin-top: 0.6rem; }
+@media (min-width: 1000px) {
+  .kartaOpomba { margin-top: 2.2rem; }
+}
+@media (min-width: 1000px) {
+  .matMreza { grid-template-columns: 1fr 1.15fr; gap: 5rem; }
+  .trakBarve { min-height: 210px; }
+  .trakBarve:nth-child(even) { translate: 0 16px; }
+}
+
+.pasPodatki { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0 2rem; margin-top: 0.4rem; border-top: 1px solid rgb(255 255 255 / 0.2); padding-top: 0.7rem; }
+.pasPodatki dt { color: var(--na-antracitu-2); }
+.pasPodatki dd { font-weight: 650; }
+@media (max-width: 520px) { .pasPodatki { grid-template-columns: 1fr 1fr; gap: 0.6rem 1.5rem; } }

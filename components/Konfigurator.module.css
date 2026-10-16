@@ -1,0 +1,210 @@
+.konf { padding-bottom: var(--sekcija); }
+
+.izdelekVrstica { padding-bottom: 1.2rem; }
+.izdelekPreklop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.preklop {
+  min-height: 46px;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--crnilo);
+  border-radius: var(--r-ctrl);
+  background: var(--bela);
+  font-weight: 640;
+  font-stretch: 106%;
+  white-space: nowrap;
+  touch-action: manipulation;
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.preklop:active { transform: scale(0.97); }
+.preklop[aria-pressed='true'] { background: var(--crnilo); color: var(--bela); }
+@media (max-width: 640px) {
+  .izdelekPreklop { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(var(--rob) * -1); padding: 0 var(--rob) 0.3rem; scrollbar-width: none; }
+  .preklop { flex: none; }
+}
+
+.mreza { display: grid; gap: 1.5rem; align-items: start; }
+
+/* ---------- risba ---------- */
+.risbaStolpec { min-width: 0; }
+.risbaLepljiva { display: grid; border: 1px solid var(--crnilo); border-radius: var(--r-media); overflow: hidden; background: var(--bela); }
+.platno { padding: clamp(0.5rem, 0.3rem + 1vw, 1.2rem); }
+.risba :global(svg) { width: 100%; height: auto; display: block; }
+.glavaRisbe { display: grid; border-top: 1px solid var(--crnilo); }
+.grNaslov { display: grid; gap: 0.15rem; padding: 0.8rem 1rem; }
+.grNaslov :global(.napis) { color: var(--jeklo); }
+.grNaslov strong { font-size: var(--step-1); font-stretch: 108%; font-weight: 700; }
+.grPolja {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--crta);
+}
+.grPolja > div {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--crta);
+  min-width: 0;
+}
+.grPolja > div:nth-child(odd) { border-right: 1px solid var(--crta); }
+.grPolja dt { color: var(--jeklo); font-size: 0.7rem; }
+.grPolja dd { margin: 0; font-size: var(--step--1); font-weight: 600; color: var(--crnilo); overflow-wrap: anywhere; }
+.grPolja > .grBarva { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
+.grBarva dd { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.grVzorec {
+  width: 1.1rem; height: 1.1rem; border-radius: 50%;
+  background: var(--sw); box-shadow: inset 0 0 0 1px rgb(28 33 36 / 0.25);
+  flex: none;
+}
+.grRalIme { color: var(--jeklo); font-weight: 500; }
+.risba { animation: risbaVhod 280ms var(--ease-out); }
+@keyframes risbaVhod { from { opacity: 0.35; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .risba { animation: none; } }
+.grAkcije { display: flex; border-top: 1px solid var(--crta); }
+.malGumb {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: 44px;
+  font-size: var(--step--1);
+  font-weight: 620;
+  touch-action: manipulation;
+}
+.malGumb + .malGumb { border-left: 1px solid var(--crta); }
+@media (hover: hover) and (pointer: fine) {
+  .malGumb:hover { background: var(--list); }
+  .preklop:not([aria-pressed='true']):hover { background: var(--list); }
+}
+
+@media (max-width: 999px) {
+  /* na telefonu risba ostane vidna med izbiranjem */
+  .risbaStolpec { position: sticky; top: var(--glava); z-index: 4; margin-inline: calc(var(--rob) * -1); padding: 0.4rem var(--rob) 0.6rem; background: var(--papir); }
+  .risbaLepljiva { border-radius: 8px; }
+  .glavaRisbe { display: none; }
+  .platno { padding: 0.3rem; }
+  .risba :global(svg) { width: 100%; height: min(24vh, 46vw); }
+}
+@media (min-width: 1000px) {
+  .mreza { grid-template-columns: 1.25fr 1fr; gap: 3rem; }
+  .risbaStolpec { align-self: stretch; }
+  .risbaLepljiva { position: sticky; top: calc(var(--glava) + 1rem); max-height: calc(100svh - var(--glava) - 2rem); overflow: auto; }
+}
+
+/* ---------- koraki ---------- */
+.izbire { display: grid; gap: 0; min-width: 0; }
+.korak { border: 0; padding: 1.5rem 0 1.7rem; margin: 0; border-top: 1px solid var(--crta-mocna); min-width: 0; }
+.korak:first-child { border-top: 2px solid var(--crnilo); }
+.korakNaslov {
+  display: flex; align-items: center; gap: 0.7rem;
+  font-size: var(--step-1); font-stretch: 108%; font-weight: 700;
+  padding: 0; margin-bottom: 1rem; float: left; width: 100%;
+}
+.korakNaslov + * { clear: both; }
+.st {
+  display: inline-grid; place-items: center; flex: none;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--crnilo);
+  font-size: 0.85rem; font-weight: 700; font-stretch: 80%;
+  vertical-align: middle;
+}
+.namig { clear: both; color: var(--jeklo); font-size: var(--step--1); margin: -0.4rem 0 0.9rem; }
+.korakTelo { clear: both; display: grid; gap: 1.2rem; }
+
+.kartice { display: grid; grid-template-columns: repeat(min(var(--st), 2), 1fr); gap: 8px; }
+@media (min-width: 560px) {
+  .kartice { grid-template-columns: repeat(var(--st), 1fr); }
+}
+.kartica {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 64px;
+  padding: 0.7rem 2rem 0.7rem 0.8rem;
+  background: var(--bela);
+  border: 1px solid var(--crta-mocna);
+  border-radius: var(--r-ctrl);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.kartica:active { transform: scale(0.985); }
+.kartica input { position: absolute; opacity: 0; pointer-events: none; }
+.kartica:has(input:checked) { border-color: var(--crnilo); box-shadow: inset 0 0 0 1px var(--crnilo); }
+.kartica:has(input:focus-visible) { outline: 2px solid var(--fokus); outline-offset: 2px; }
+.karticaIkona { color: var(--crnilo); display: grid; place-items: center; }
+.karticaBesedilo { display: grid; gap: 0.1rem; grid-column: 2; }
+.kartica:not(:has(.karticaIkona)) .karticaBesedilo { grid-column: 1 / -1; }
+@media (max-width: 479px) {
+  .kartice:has(.karticaIkona) { grid-template-columns: 1fr; }
+}
+.karticaNaziv { font-weight: 650; font-size: var(--step--1); line-height: 1.25; }
+.karticaOpis { font-size: var(--step--2); color: var(--jeklo); line-height: 1.35; }
+.kljukica {
+  position: absolute; top: 8px; right: 8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--zelena); color: var(--na-zeleni);
+  opacity: 0; scale: 0.6;
+  transition: opacity 160ms var(--ease-out), scale 200ms var(--ease-out);
+}
+.kartica:has(input:checked) .kljukica { opacity: 1; scale: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .kartica:hover { border-color: var(--crnilo); }
+}
+
+/* mere */
+.mera { display: grid; gap: 0.5rem; }
+.meraOznaka { font-weight: 620; font-size: var(--step--1); }
+.meraVrstica { display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; }
+.meraVnos { position: relative; display: block; }
+.meraVnos :global(.vnos) { padding-right: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.enota { position: absolute; right: 0.8rem; top: 50%; translate: 0 -50%; color: var(--jeklo); font-size: var(--step--1); pointer-events: none; }
+.drsnik {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 40px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.drsnik::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, var(--crnilo) var(--p), var(--crta-mocna) var(--p));
+}
+.drsnik::-moz-range-track { height: 4px; border-radius: 2px; background: var(--crta-mocna); }
+.drsnik::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--crnilo); }
+.drsnik::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px; height: 24px; margin-top: -10px;
+  border-radius: 50%;
+  background: var(--zelena);
+  border: 2px solid var(--na-zeleni);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+.drsnik::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--zelena); border: 2px solid var(--na-zeleni); }
+.drsnik:focus-visible { outline: none; }
+.drsnik:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--fokus); outline-offset: 2px; }
+
+.stikala { display: grid; gap: 0.8rem; }
+.stikala :global(.potrditev) { font-size: var(--step-0); }
+
+/* barve */
+.barve { display: grid; gap: 0.7rem; }
+.ralIzbrana { font-size: var(--step--1); }
+.drugaRal { display: grid; gap: 0.35rem; max-width: 220px; }
+.ralVnos { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem; font-weight: 640; }
+
+.koncni { display: grid; gap: 1rem; padding-top: 1.8rem; border-top: 2px solid var(--crnilo); scroll-margin-top: calc(var(--glava) + 40vh); }
+.koncni h2 { display: flex; align-items: center; gap: 0.7rem; font-size: var(--step-2); }
+@media (min-width: 1000px) {
+  .koncni { scroll-margin-top: calc(var(--glava) + 16px); }
+}
+
+.barve :global(.vzorci) { flex-wrap: nowrap; gap: 6px; }
+.barve :global(.vzorec) { width: 36px; height: 36px; flex: none; }
+@media (max-width: 360px) { .barve :global(.vzorec) { width: 32px; height: 32px; } }

@@ -1,0 +1,23 @@
+.mreza { display: grid; gap: 3rem; padding-bottom: var(--sekcija); }
+.obrazec { display: grid; gap: 1.4rem; background: var(--list); border: 1px solid var(--crta); border-radius: var(--r-media); padding: clamp(1.1rem, 0.6rem + 2vw, 2.2rem); align-self: start; scroll-margin-top: calc(var(--glava) + 16px); }
+.stranski { display: grid; gap: 0.4rem; align-content: start; }
+.velik {
+  display: flex; align-items: center; gap: 0.8rem;
+  font-size: var(--step-2); font-stretch: 110%; font-weight: 700; letter-spacing: -0.012em;
+  text-decoration: none; padding: 0.6rem 0; border-bottom: 1px solid var(--crta-mocna);
+  overflow-wrap: anywhere;
+}
+.velik svg { color: var(--zelena-temna); flex: none; }
+.podatki { display: grid; margin: 0.8rem 0 1.4rem; }
+.podatki > div { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--crta); }
+.podatki dt { color: var(--jeklo); padding-top: 0.2rem; }
+.podatki dd { display: block; }
+.podatki dd svg { display: inline; vertical-align: -2px; }
+.podatki a { font-weight: 600; }
+@media (min-width: 1000px) {
+  .mreza { grid-template-columns: 1.35fr 1fr; gap: 4rem; }
+  .stranski { position: sticky; top: calc(var(--glava) + 1.5rem); }
+}
+@media (max-width: 480px) {
+  .podatki > div { grid-template-columns: 1fr; gap: 0.2rem; }
+}

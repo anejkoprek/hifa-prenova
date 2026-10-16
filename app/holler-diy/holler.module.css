@@ -1,0 +1,4 @@
+.povezave { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.6rem; }
+@media (min-width: 1000px) {
+  .povezave { margin-left: calc((100% - 3rem) * 0.75 / 2.75 + 3rem); }
+}

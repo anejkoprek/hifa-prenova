@@ -1,0 +1,2 @@
+.glava { display: grid; gap: 0.5rem; padding-top: clamp(1.2rem, 0.6rem + 2vw, 2.5rem); padding-bottom: 1.2rem; }
+.glava > p { max-width: 60ch; }

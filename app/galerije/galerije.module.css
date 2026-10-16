@@ -1,0 +1,23 @@
+.zbirke {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 10px;
+  padding-bottom: 1rem;
+}
+@media (min-width: 700px) { .zbirke { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 1100px) { .zbirke { grid-template-columns: repeat(9, 1fr); } }
+.zbirka { display: grid; gap: 0.35rem; text-decoration: none; }
+.zbirkaSlika { display: block; aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--papir-2); }
+.zbirkaSlika img { transition: transform 600ms var(--ease-out); }
+.zbirkaIme { font-weight: 650; font-stretch: 104%; line-height: 1.25; margin-top: 0.2rem; }
+@media (hover: hover) and (pointer: fine) {
+  .zbirka:hover img { transform: scale(1.05); }
+  .zbirka:hover .zbirkaIme { text-decoration: underline; text-decoration-color: var(--zelena); text-decoration-thickness: 2px; }
+}
+
+.glava { display: grid; gap: 1.1rem; padding-top: clamp(1.5rem, 0.8rem + 3vw, 3.5rem); padding-bottom: 1rem; }
+.nazaj { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--jeklo); text-decoration: none; justify-self: start; min-height: 32px; }
+.ostale { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+.ostale :global(.cip) { text-decoration: none; }

@@ -1,0 +1,180 @@
+.hero { padding-top: clamp(1rem, 0.5rem + 1.5vw, 2rem); }
+
+.list {
+  max-width: 1480px;
+  margin-inline: auto;
+  padding-inline: var(--rob);
+}
+
+.scena { position: relative; display: flex; flex-direction: column; }
+@media (max-width: 1099px) {
+  /* risba je prva, naslov pod njo */
+  .scena .risba { order: -1; margin-bottom: 1.2rem; }
+}
+@media (min-width: 1100px) {
+  /* risba ostane v prvem zaslonu skupaj z izbirami */
+  .scena { container-type: inline-size; max-width: calc((100svh - 470px) * 2.211); min-width: min(1060px, 100%); margin-inline: auto; width: 100%; }
+}
+
+/* ---------- naslov ---------- */
+.uvod { display: grid; gap: 0.9rem; padding-bottom: 1.2rem; }
+.naslov { max-width: 14ch; }
+.lead { font-size: var(--step-1); color: var(--crnilo-2); line-height: 1.45; max-width: 40ch; }
+.namig {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: var(--step--1); font-weight: 620; color: var(--zelena-temna);
+}
+
+@media (min-width: 1100px) {
+  /* naslov stoji v praznem nebu nad nadstreškom, kot napis na listu */
+  .uvod {
+    position: absolute;
+    z-index: 2;
+    left: 60.5%;
+    right: 0;
+    top: 2%;
+    padding: 0;
+    gap: 1rem;
+  }
+  .naslov { font-size: clamp(2rem, 4.1cqi, 3.6rem); max-width: 13ch; }
+  .lead { font-size: clamp(0.95rem, 1.45cqi, 1.1rem); max-width: 34ch; }
+}
+
+/* ---------- risba ---------- */
+.risba {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2200 / 995;
+  overflow: clip;
+  overflow-clip-margin: 24px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+
+.kazalo line { stroke: var(--crnilo); stroke-width: 1; }
+.kazalo circle { fill: var(--crnilo); }
+.kazalo[data-aktivna] line { stroke: var(--zelena-temna); stroke-width: 1.6; }
+.kazalo[data-aktivna] circle { fill: var(--zelena); stroke: var(--na-zeleni); stroke-width: 2; }
+
+.oblacek {
+  fill: none;
+  stroke: var(--zelena);
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .oblacek { animation: risi 620ms var(--ease-out) both; }
+}
+@keyframes risi {
+  from { stroke-dashoffset: 1; }
+}
+.oblacekLebdi {
+  fill: none;
+  stroke: var(--crnilo);
+  stroke-opacity: 0.45;
+  stroke-dasharray: 10 8;
+  pointer-events: none;
+}
+.zadetek { fill: transparent; cursor: pointer; }
+
+.oznaka {
+  --d: 40px;
+  position: absolute;
+  z-index: 3;
+  translate: -50% -50%;
+  box-shadow: 0 0 0 4px var(--papir);
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.oznaka:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .oznaka:not([aria-pressed='true']):hover { background: var(--crnilo); color: var(--bela); }
+}
+@media (max-width: 760px) {
+  .risba { aspect-ratio: 1760 / 950; width: calc(100% + 2 * var(--rob)); margin-inline: calc(var(--rob) * -1); }
+  .oznaka { --d: 32px; box-shadow: 0 0 0 3px var(--papir); }
+  /* nevidna večja ploskev za prst */
+  .oznaka::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
+}
+
+.cela {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 10px;
+  box-shadow: var(--senca-1);
+}
+
+/* ---------- glava risbe (izbire) ---------- */
+.plosca {
+  display: grid;
+  border-top: 2px solid var(--crnilo);
+  margin-top: 0;
+}
+.celica { padding: 1.1rem 0; }
+.zavihki {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--crta-mocna);
+}
+.zavihek {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.2rem 0.6rem;
+  font-size: var(--step--2);
+  font-weight: 620;
+  font-stretch: 90%;
+  color: var(--crnilo-2);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  touch-action: manipulation;
+}
+.zavihek :global(.detajl) { --d: 30px; }
+.zavihek[aria-selected='true'] { color: var(--crnilo); border-bottom-color: var(--zelena); }
+
+.delNaslov {
+  display: flex; align-items: center; gap: 0.75rem;
+  font-size: var(--step-2); font-stretch: 112%; font-weight: 720; letter-spacing: -0.014em;
+}
+.delNaslov :global(.detajl) { --d: 40px; }
+.delOpis { margin-top: 0.6rem; color: var(--crnilo-2); max-width: 40ch; font-size: var(--step--1); }
+
+.izbireCelica { display: grid; gap: 1.1rem; }
+.skupina { border: 0; padding: 0; display: grid; gap: 0.55rem; min-width: 0; }
+.skupina legend { color: var(--jeklo); padding: 0; margin-bottom: 0.55rem; }
+.ralIme { color: var(--crnilo); margin-left: 0.5rem; letter-spacing: 0.04em; }
+.izbireCelica :global(.vzorci) { flex-wrap: nowrap; gap: 6px; }
+.izbireCelica :global(.vzorec) { width: 36px; height: 36px; flex: none; }
+
+
+.akcijeCelica { display: grid; gap: 0.5rem; align-content: start; }
+.povezave { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 0.6rem; font-size: var(--step--1); }
+.tel { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 640; text-decoration: none; min-height: 40px; }
+
+@media (max-width: 760px) {
+  .opisCelica .delNaslov { display: none; }
+  .opisCelica { padding-bottom: 0; }
+  .akcijeCelica :global(.gumb--obroba) { --bg: var(--bela); }
+}
+
+@media (min-width: 761px) {
+  .zavihki { display: none; }
+  .plosca { grid-template-columns: minmax(220px, 0.9fr) 2fr minmax(250px, 1fr); }
+  .celica { padding: 1.4rem 1.6rem 1.6rem; border-left: 1px solid var(--crta-mocna); }
+  .opisCelica { border-left: 0; padding-left: 0; }
+  .akcijeCelica { padding-right: 0; }
+}
+@media (min-width: 761px) and (max-width: 1099px) {
+  .plosca { grid-template-columns: 1fr 1fr; }
+  .izbireCelica { grid-column: 1 / -1; grid-row: 2; border-left: 0; padding-left: 0; border-top: 1px solid var(--crta-mocna); }
+}
+@media (min-width: 1100px) {
+  .namig { display: none; }
+}
+.akcijeCelica :global(.gumb) { white-space: normal; text-align: center; }
+.plosca > * { min-width: 0; }
