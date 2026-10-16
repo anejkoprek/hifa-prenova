@@ -322,7 +322,7 @@ export default function Procelje() {
 
           <div className={s.celica + ' ' + s.akcijeCelica}>
             <Link className="gumb gumb--zelen gumb--poln" href={povprasevanje}>
-              Povpraševanje za ta del <ArrowRight size={18} weight="bold" className="puscica" aria-hidden />
+              Pošljite povpraševanje <ArrowRight size={18} weight="bold" className="puscica" aria-hidden />
             </Link>
             <Link className="gumb gumb--obroba gumb--poln" href={vKonfigurator}>
               Podrobno v konfiguratorju

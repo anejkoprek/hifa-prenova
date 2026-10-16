@@ -5,6 +5,7 @@ import Povprasevanje from './Povprasevanje';
 import { mnenja, podjetje, postopek, pogostaVprasanja } from '@/lib/podjetje';
 import { steviloSlik } from '@/lib/galerije';
 import type { IZDELKI } from '@/lib/povprasevanje';
+import { lezeca } from '@/lib/mere';
 import s from './Sekcije.module.css';
 
 /** Pet korakov kot črta na gradbenem terminskem planu. Številke tu nosijo zaporedje. */
@@ -67,7 +68,7 @@ export function Trak({ slike }: { slike: { pot: string; alt: string }[] }) {
       </div>
       <ul className={s.trak} tabIndex={0} aria-label="Izbrane fotografije, podrsajte vodoravno">
         {slike.map((t) => (
-          <li key={t.pot}>
+          <li key={t.pot} data-pokoncna={!lezeca(t.pot) || undefined}>
             <Link href="/galerije" tabIndex={-1}>
               <Foto pot={t.pot} alt={t.alt} sizes="(min-width: 1024px) 28vw, 72vw" okvir={false} style={{ height: '100%' }} />
             </Link>

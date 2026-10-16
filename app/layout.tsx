@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   applicationName: 'HIFA d.o.o.',
   openGraph: { type: 'website', locale: 'sl_SI', siteName: 'HIFA d.o.o.' },
   formatDetection: { telephone: false },
+  // osnutek na Vercelu ne sme v Google; ob objavi na hifa.si nastavi NEXT_PUBLIC_OBJAVA=1
+  ...(process.env.NEXT_PUBLIC_OBJAVA === '1' ? {} : { robots: { index: false, follow: false } }),
 };
 
 export const viewport: Viewport = {

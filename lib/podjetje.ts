@@ -38,14 +38,19 @@ export const izdelki: Izdelek[] = [
   { slug: 'holler-diy', href: '/holler-diy', naziv: 'Vrata in ograje Holler DIY', kratko: 'Holler DIY' },
 ];
 
+/** Izdelki v spustnem meniju glave: kratek opis in fotografija */
+export const izdelkiMeni = [
+  { href: '/ograje', naziv: 'Ograje in vrata', opis: 'Balkonske, dvoriščne, notranje', slika: 'media/galleries/15/featured/zunanje-balkonske-ograje-hifa-23.jpg' },
+  { href: '/nadstreski', naziv: 'Nadstreški', opis: 'Za avto, vhod in teraso', slika: 'media/galleries/13/featured/nadstreski-hifa-09.jpg' },
+  { href: '/stopnisca', naziv: 'Stopnišča', opis: 'Zunanja in notranja', slika: 'files/media/novi-vstop-stopnisca.jpg' },
+  { href: '/storitve', naziv: 'Konstrukcije', opis: 'Nosilci, podesti, lokali', slika: 'media/357/ostalo-hifa-19.jpg' },
+  { href: '/holler-diy', naziv: 'Holler DIY', opis: 'Avstrijska alu vrata', slika: 'media/galleries/22/featured/vrata-holler-thumb.jpg' },
+];
+
 export const navigacija = [
-  { href: '/ograje', naziv: 'Ograje' },
-  { href: '/nadstreski', naziv: 'Nadstreški' },
-  { href: '/stopnisca', naziv: 'Stopnišča' },
-  { href: '/storitve', naziv: 'Konstrukcije' },
-  { href: '/holler-diy', naziv: 'Holler DIY' },
   { href: '/galerije', naziv: 'Galerija' },
   { href: '/o-nas', naziv: 'O nas' },
+  { href: '/kontakt', naziv: 'Kontakt' },
 ];
 
 export const mnenja = [

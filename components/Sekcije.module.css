@@ -109,7 +109,7 @@
   scroll-snap-align: start;
   background: var(--papir-2);
 }
-.trak li:nth-child(3n + 2) { width: min(52vw, 300px); aspect-ratio: 3 / 4; }
+.trak li[data-pokoncna] { width: min(52vw, 300px); aspect-ratio: 3 / 4; }
 .trak a { display: block; height: 100%; }
 .trak img { transition: transform 700ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) {

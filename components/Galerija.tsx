@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { MagnifyingGlassPlus } from '@phosphor-icons/react';
 import { kategorije, type KategorijaId, type SlikaZ } from '@/lib/galerije';
 import { slika } from '@/lib/slike';
+import { lezeca } from '@/lib/mere';
 import s from './Galerija.module.css';
 
 const Lightbox = dynamic(() => import('./Lightbox'), { ssr: false });
@@ -55,16 +56,21 @@ export default function Galerija({ slike, filtri = false, zacetno = 27 }: Props)
       ) : null}
 
       <ul className={s.mreza}>
-        {vidne.map((x, i) => (
-          <li key={x.pot} className={s.plosca} data-velika={i % 9 === 0 || undefined}>
+        {vidne.map((x, i) => {
+          // pokončne fotografije dobijo visoko ploščo (brez rezanja), vsaka deveta ležeča pa veliko
+          const pokoncna = !lezeca(x.pot);
+          const velika = !pokoncna && i % 9 === 0;
+          return (
+          <li key={x.pot} className={s.plosca} data-velika={velika || undefined} data-pokoncna={pokoncna || undefined} style={{ ['--z' as string]: `${(i % 9) * 35}ms` }}>
             <button type="button" className={s.gumb} onClick={() => setOdprta(i)} aria-label={`Povečaj: ${x.alt}`}>
-              <Image src={slika(x.pot)} alt={x.alt} fill sizes={i % 9 === 0 ? '(min-width: 1000px) 50vw, 100vw' : '(min-width: 1000px) 25vw, 50vw'} className={s.img} />
+              <Image src={slika(x.pot)} alt={x.alt} fill sizes={velika ? '(min-width: 1000px) 50vw, 100vw' : '(min-width: 1000px) 25vw, 50vw'} className={s.img} />
               <span className={s.lupa} aria-hidden>
                 <MagnifyingGlassPlus size={20} weight="bold" />
               </span>
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {izbrane.length > stevilo ? (
