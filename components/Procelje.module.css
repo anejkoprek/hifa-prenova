@@ -58,25 +58,22 @@
 .kazalo[data-aktivna] line { stroke: var(--zelena-temna); stroke-width: 1.6; }
 .kazalo[data-aktivna] circle { fill: var(--zelena); stroke: var(--na-zeleni); stroke-width: 2; }
 
-.oblacek {
-  fill: none;
-  stroke: var(--zelena);
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  pointer-events: none;
-}
+.izbor { pointer-events: none; }
+.izborPolje { fill: var(--zelena); fill-opacity: 0.08; }
+.izborOkvir { fill: none; stroke: var(--zelena-temna); stroke-width: 1; stroke-dasharray: 5 5; stroke-opacity: 0.7; }
+.izborKoti { fill: none; stroke: var(--zelena); stroke-linecap: square; }
+/* vogali se ob izbiri iz širšega okvirja »ujamejo« na del, polje se pokaže za njimi */
 @media (prefers-reduced-motion: no-preference) {
-  .oblacek { animation: risi 620ms var(--ease-out) both; }
+  .izborKoti, .izborOkvir { transform-box: fill-box; transform-origin: center; animation: ujemi 380ms var(--ease-out) both; }
+  .izborPolje { animation: polje 380ms var(--ease-out) both; }
 }
-@keyframes risi {
-  from { stroke-dashoffset: 1; }
-}
-.oblacekLebdi {
+@keyframes ujemi { from { opacity: 0; transform: scale(1.08); } }
+@keyframes polje { from { fill-opacity: 0; } }
+.izborLebdi {
   fill: none;
   stroke: var(--crnilo);
-  stroke-opacity: 0.45;
-  stroke-dasharray: 10 8;
+  stroke-opacity: 0.4;
+  stroke-linecap: square;
   pointer-events: none;
 }
 .zadetek { fill: transparent; cursor: pointer; }
@@ -91,6 +88,25 @@
   transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out), color 160ms var(--ease-out);
 }
 .oznaka:active { transform: scale(0.94); }
+/* povabilo h kliku: nežen val okoli neizbranih oznak, dokler obiskovalec ne izbere dela */
+@media (prefers-reduced-motion: no-preference) {
+  .hero[data-namig] .oznaka:not([aria-pressed='true'])::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    border: 2px solid var(--zelena);
+    pointer-events: none;
+    animation: val 2.4s var(--ease-out) infinite;
+  }
+  .hero[data-namig] .oznaka:nth-of-type(2)::after { animation-delay: 0.3s; }
+  .hero[data-namig] .oznaka:nth-of-type(3)::after { animation-delay: 0.6s; }
+  .hero[data-namig] .oznaka:nth-of-type(4)::after { animation-delay: 0.9s; }
+}
+@keyframes val {
+  0% { opacity: 0.9; transform: scale(1); }
+  60%, 100% { opacity: 0; transform: scale(1.7); }
+}
 @media (hover: hover) and (pointer: fine) {
   .oznaka:not([aria-pressed='true']):hover { background: var(--crnilo); color: var(--bela); }
 }

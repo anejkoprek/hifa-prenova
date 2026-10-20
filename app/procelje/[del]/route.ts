@@ -1,6 +1,6 @@
 // Statični izseki pročelja (A–D) kot SVG slike: /procelje/A ... /procelje/D.
 // Ločeno od HTML-ja, da se risba ne pošilja z vsako stranjo in se shrani v predpomnilnik.
-import { oblacek, okvirDela, privzetaIzbira, risiProcelje, type DelId } from '@/lib/risbe/procelje';
+import { izbor, okvirDela, privzetaIzbira, risiProcelje, type DelId } from '@/lib/risbe/procelje';
 
 export const dynamic = 'force-static';
 const DELI: DelId[] = ['A', 'B', 'C', 'D'];
@@ -36,7 +36,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ del: strin
   const telo = risiProcelje(privzetaIzbira)
     .replace(/var\((--p-[a-z-]+)\)/g, (_m, k: string) => BARVE[k] ?? '#000')
     .replace(/vector-effect="non-scaling-stroke"/g, '');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" width="${Math.round(vb.w)}" height="${Math.round(vb.h)}"><rect x="${vb.x}" y="${vb.y}" width="${vb.w}" height="${vb.h}" fill="#fbfbf9"/>${telo}<path d="${oblacek(d)}" fill="none" stroke="#91bd30" stroke-width="${(vb.w / 260).toFixed(1)}" stroke-linejoin="round"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" width="${Math.round(vb.w)}" height="${Math.round(vb.h)}"><rect x="${vb.x}" y="${vb.y}" width="${vb.w}" height="${vb.h}" fill="#fbfbf9"/>${telo}${(() => { const b = izbor(d); return `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#91bd30" fill-opacity="0.1" stroke="#45620f" stroke-opacity="0.7" stroke-dasharray="${(vb.w / 120).toFixed(1)} ${(vb.w / 120).toFixed(1)}" stroke-width="${(vb.w / 700).toFixed(2)}"/><path d="${b.koti}" fill="none" stroke="#91bd30" stroke-width="${(vb.w / 200).toFixed(1)}" stroke-linecap="square"/>`; })()}</svg>`;
   return new Response(svg, {
     headers: { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800' },
   });

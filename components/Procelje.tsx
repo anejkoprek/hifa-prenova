@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ArrowsOut, Phone, SlidersHorizontal } from '@phosphor-icons/react';
 import {
   risiProcelje,
-  oblacek,
+  izbor,
   obmocja,
   oznake,
   okvirDela,
@@ -44,6 +44,8 @@ export default function Procelje() {
   const [izbran, setIzbran] = useState<DelId>('A');
   const [lebdi, setLebdi] = useState<DelId | null>(null);
   const [kode, setKode] = useState<Kode>(zacetek);
+  // dokler obiskovalec ne izbere dela, oznake A–D rahlo utripajo kot povabilo h kliku
+  const [namig, setNamig] = useState(true);
   const [vb, setVb] = useState<Vb>(VIEWBOX);
   const [osnova, setOsnova] = useState<Vb>(VIEWBOX);
   const [priblizano, setPriblizano] = useState(false);
@@ -101,6 +103,7 @@ export default function Procelje() {
   const izberi = useCallback(
     (id: DelId, priblizaj = true) => {
       setIzbran(id);
+      setNamig(false);
       setRisano((n) => n + 1);
       if (priblizaj && ozkiZaslon()) {
         setPriblizano(true);
@@ -143,7 +146,7 @@ export default function Procelje() {
   const viewBox = `${vb.x} ${vb.y} ${vb.w} ${vb.h}`;
 
   return (
-    <section className={s.hero} aria-labelledby="hero-naslov">
+    <section className={s.hero} aria-labelledby="hero-naslov" data-namig={namig || undefined}>
       <div className={s.list}>
         <div className={s.scena}>
         <div className={s.uvod}>
@@ -168,7 +171,7 @@ export default function Procelje() {
             <g dangerouslySetInnerHTML={{ __html: svg }} />
             {/* kazalne črte do oznak */}
             {IDS.map((id) => {
-              const o = oznake[id];
+              const o = id === 'B' && (kode.B as { oblika?: string }).oblika === 'enokapnica' ? { ...oznake.B, tz: 2.93 } : oznake[id];
               const x1 = (o.x + 0.9) * 100, y1 = (9.5 - o.z) * 100;
               const x2 = (o.tx + 0.9) * 100, y2 = (9.5 - o.tz) * 100;
               const aktivna = id === izbran;
@@ -180,8 +183,21 @@ export default function Procelje() {
               );
             })}
             {/* oblaček spremembe okoli izbranega dela */}
-            <path key={`${izbran}-${risano}`} d={oblacek(izbran)} className={s.oblacek} pathLength={1} strokeWidth={(2.6 * vb.w) / sirina} />
-            {lebdi && lebdi !== izbran ? <path d={oblacek(lebdi)} className={s.oblacekLebdi} strokeWidth={(1.6 * vb.w) / sirina} /> : null}
+            {/* izbrani del: rahlo obarvano polje, črtkan okvir in vogalne oznake, ki se »ujamejo« na del */}
+            {(() => {
+              const b = izbor(izbran);
+              return (
+                <g key={`${izbran}-${risano}`} className={s.izbor}>
+                  <rect x={b.x} y={b.y} width={b.w} height={b.h} className={s.izborPolje} />
+                  <rect x={b.x} y={b.y} width={b.w} height={b.h} className={s.izborOkvir} vectorEffect="non-scaling-stroke" />
+                  <path d={b.koti} className={s.izborKoti} strokeWidth={(3 * vb.w) / sirina} />
+                </g>
+              );
+            })()}
+            {lebdi && lebdi !== izbran ? (() => {
+              const b = izbor(lebdi);
+              return <path d={b.koti} className={s.izborLebdi} strokeWidth={(2 * vb.w) / sirina} />;
+            })() : null}
             {/* zadetki za miško in prst */}
             {(['B', 'A', 'C', 'D'] as DelId[]).map((id) => {
               const o = obmocja[id];
@@ -203,7 +219,7 @@ export default function Procelje() {
           </svg>
 
           {IDS.map((id) => {
-            const o = oznake[id];
+            const o = id === 'B' && (kode.B as { oblika?: string }).oblika === 'enokapnica' ? { ...oznake.B, tz: 2.93 } : oznake[id];
             const p = vOdstotkih(o.x, o.z, vb);
             if (p.left < -2 || p.left > 102 || p.top < -2 || p.top > 102) return null;
             // oznaka ne sme pasti čez rob risbe (na telefonu je risba obrezana)

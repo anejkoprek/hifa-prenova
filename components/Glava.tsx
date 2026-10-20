@@ -81,6 +81,7 @@ export default function Glava() {
   const aktiven = (href: string) => pot === href || pot.startsWith(href + '/');
 
   return (
+    <>
     <header className={s.glava} data-scroll={scroll || undefined}>
       <div className={`wrap ${s.vrstica}`}>
         <Link href="/" className={s.logo} aria-label="HIFA d.o.o., na začetno stran">
@@ -157,6 +158,8 @@ export default function Glava() {
         </div>
       </div>
 
+    </header>
+    {/* mobilni meni je zunaj glave: glava ima zameglitev ozadja, ki bi v Safariju ujela fiksni meni v svojo višino */}
       <div id="mobilni-meni" className={s.meni} data-odprt={odprt || undefined} hidden={!odprt}>
         <nav aria-label="Mobilna navigacija" className="wrap">
           <p className={`napis ${s.meniNapis}`}>Izdelki</p>
@@ -193,6 +196,6 @@ export default function Glava() {
           </div>
         </nav>
       </div>
-    </header>
+    </>
   );
 }
