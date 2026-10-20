@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { ArrowCounterClockwise, HandGrabbing } from '@phosphor-icons/react';
 import type { NadstresekStanje, OgrajaStanje } from '@/lib/konfigurator';
-import { modelNadstreska, modelOgraje, sprosti, ustvariMateriale } from '@/lib/model3d';
+import { modelNadstreska, modelOgraje, podstavek, sprosti, ustvariMateriale } from '@/lib/model3d';
 import s from './Scena3D.module.css';
 
 type Props =
@@ -53,8 +53,17 @@ export default function Scena3D(props: Props) {
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xe2e5e2);
-    scene.fog = new THREE.Fog(0xe2e5e2, 26, 70);
+    // ozadje: nežen navpičen prehod, kot fotografija makete v studiu
+    const platno = document.createElement('canvas');
+    platno.width = 2; platno.height = 256;
+    const cx = platno.getContext('2d')!;
+    const grad = cx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#f3f4f2');
+    grad.addColorStop(1, '#d6dad5');
+    cx.fillStyle = grad; cx.fillRect(0, 0, 2, 256);
+    const ozadje = new THREE.CanvasTexture(platno);
+    ozadje.colorSpace = THREE.SRGBColorSpace;
+    scene.background = ozadje;
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.38;
@@ -115,15 +124,17 @@ export default function Scena3D(props: Props) {
     const pogled = (animiraj: boolean) => {
       const o = svet.current?.okvir;
       if (!o) return;
-      const ozko = camera.aspect < 1.1;
-      const razdalja = o.velikost * (ozko ? 1.55 : 1.05) + 2.5;
+      // kamera tako daleč, da cel model s podstavkom (krogla okoli njega) pade v vidno polje
+      const vfov = THREE.MathUtils.degToRad(camera.fov);
+      const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+      const razdalja = (o.velikost / Math.sin(Math.min(vfov, hfov) / 2)) * 0.9;
       const smer = (o.smer ?? new THREE.Vector3(0.55, 0.42, 1)).clone().normalize();
       const cilj = o.sredisce.clone().add(smer.multiplyScalar(razdalja));
       controls.target.copy(o.sredisce);
       controls.minDistance = razdalja * 0.35;
       controls.maxDistance = razdalja * 2.2;
       // senca pokrije cel model
-      const r = o.velikost * 0.9 + 3;
+      const r = o.velikost + 1;
       Object.assign(sonce.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: 60 });
       sonce.shadow.camera.updateProjectionMatrix();
       sonce.target.position.copy(o.sredisce);
@@ -183,12 +194,19 @@ export default function Scena3D(props: Props) {
       rezultat = modelNadstreska(props.nadstresek, M);
     }
     w.model = rezultat.skupina;
+    // podstavek makete se prilagodi modelu, zato nič ne sega čez rob
+    w.model.add(podstavek(w.model, rezultat.podlaga));
     w.scene.add(w.model);
     // kamero premaknemo samo ob prvem prikazu ali menjavi vrste izdelka, ne ob vsaki izbiri
     const tip = props.izdelek === 'ograja' ? props.ograja.tip : `ns-${props.nadstresek.postavitev}`;
     const prvic = !w.okvir;
     const novTip = zadnjiTip.current !== tip;
-    w.okvir = { sredisce: rezultat.sredisce, velikost: rezultat.velikost, smer: rezultat.smer };
+    // okvir za kamero izračunamo iz dejanske velikosti modela s podstavkom
+    const okvir = new THREE.Box3().setFromObject(w.model);
+    const krogla = okvir.getBoundingSphere(new THREE.Sphere());
+    const sredisce = krogla.center.clone();
+    sredisce.y = Math.min(sredisce.y, okvir.min.y + (okvir.max.y - okvir.min.y) * 0.42);
+    w.okvir = { sredisce, velikost: krogla.radius * 0.82, smer: rezultat.smer };
     zadnjiTip.current = tip;
     if (prvic || novTip) w.pogled(prvic);
     else w.zahtevaj();

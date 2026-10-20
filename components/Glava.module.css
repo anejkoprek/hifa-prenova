@@ -183,16 +183,45 @@
 @keyframes meni {
   from { opacity: 0; transform: translateY(-8px); }
 }
-.meniNapis { margin: 1rem 0 0.6rem; color: var(--jeklo); }
-.meniIzdelki { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
-.meniIzdelki li:first-child { grid-column: 1 / -1; }
-.meniIzdelki a {
-  display: grid; gap: 0.4rem;
-  text-decoration: none; font-weight: 680; font-stretch: 106%;
+.meniRazpri {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+  min-height: 60px;
+  font-size: var(--step-2);
+  font-stretch: 112%;
+  font-weight: 680;
+  letter-spacing: -0.01em;
+  text-align: left;
 }
-.meniIzdelki a[aria-current='page'] { color: var(--zelena-temna); }
-.meniSlika { position: relative; display: block; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: var(--papir-2); }
-.meniIzdelki li:first-child .meniSlika { aspect-ratio: 16 / 7; }
+.meniRazpri svg { transition: transform 220ms var(--ease-out); }
+.meniRazpri[aria-expanded='true'] svg { transform: rotate(180deg); }
+/* gnezdeni seznam izdelkov: višina se odpre z mrežo (0fr → 1fr), brez merjenja v JS */
+.meniPod { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 260ms var(--ease-out); }
+.meniPod[data-odprt] { grid-template-rows: 1fr; }
+.meniPodNotri { overflow: hidden; }
+.meniPodNotri ul { list-style: none; padding: 0 0 0.9rem; margin: 0; display: grid; gap: 0.25rem; }
+.meniSeznam .meniPodNotri li { border-bottom: 0; }
+.meniSeznam .meniPodNotri a {
+  min-height: 0;
+  font-size: 1rem;
+  justify-content: stretch;
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.45rem 0.4rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--crnilo);
+}
+.meniSeznam .meniPodNotri a:active { background: var(--papir-2); }
+.meniSeznam .meniPodNotri a[aria-current='page'] strong { color: var(--zelena-temna); }
+.meniSeznam .meniPodNotri a > svg { color: var(--jeklo); }
+.meniSlika { position: relative; display: block; width: 64px; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: var(--papir-2); }
+.meniPodBesedilo { display: grid; gap: 0.05rem; }
+.meniPodBesedilo strong { font-size: 1.05rem; font-weight: 680; font-stretch: 106%; }
+.meniPodBesedilo span { font-size: 0.85rem; font-weight: 450; color: var(--jeklo); }
+@media (prefers-reduced-motion: reduce) { .meniPod, .meniRazpri svg { transition: none; } }
 .meniSeznam { list-style: none; padding: 1rem 0 0; }
 .meniSeznam li { border-bottom: 1px solid var(--crta); }
 .meniSeznam a {

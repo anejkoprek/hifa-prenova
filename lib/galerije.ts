@@ -63,7 +63,7 @@ export const galerije: Galerija[] = [
     opis: 'Nadstreški za avtomobile, vhode, terase in balkone, s steklom, polikarbonatom ali pločevino.',
     kategorija: 'nadstreski',
     altPredpona: 'Nadstrešek HIFA',
-    naslovnica: 'media/galleries/13/featured/nadstreski-hifa-09.jpg',
+    naslovnica: 'media/35/nadstreski-hifa-09.jpg',
     slike: zaporedje('nadstreski', 27, 68),
   },
   {

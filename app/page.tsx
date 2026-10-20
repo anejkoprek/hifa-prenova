@@ -54,8 +54,8 @@ const detajli = [
     ],
     href: '/stopnisca',
     galerija: 'stopnisca',
-    slike: [galerija('zunanje-stopniscne-ograje')!.naslovnica, izGalerije('stopnisca', 8), izGalerije('notranje-ograje', 37)],
-    alt: ['Zunanja stopniščna ograja', 'Zunanje kovinsko stopnišče ob hiši', 'Notranja stopniščna ograja'],
+    slike: [izGalerije('stopnisca', 13), izGalerije('stopnisca', 8), izGalerije('notranje-ograje', 37)],
+    alt: ['Zunanje kovinsko stopnišče z balkonom', 'Zunanje kovinsko stopnišče ob hiši', 'Notranja stopniščna ograja'],
   },
   {
     crka: 'D',
@@ -69,8 +69,8 @@ const detajli = [
     ],
     href: '/ograje#dvoriscne',
     galerija: 'zunanje-dvoriscne-ograje',
-    slike: [galerija('zunanje-dvoriscne-ograje')!.naslovnica, izGalerije('zunanje-dvoriscne-ograje', 41), izGalerije('zunanje-dvoriscne-ograje', 57)],
-    alt: ['Dvoriščna ograja in vrata', 'Dvoriščna ograja v antracitni barvi', 'Drsna dvoriščna vrata'],
+    slike: [izGalerije('zunanje-dvoriscne-ograje', 6), izGalerije('zunanje-dvoriscne-ograje', 41), izGalerije('zunanje-dvoriscne-ograje', 57)],
+    alt: ['Dvoriščna ograja z vertikalnimi letvami in drsnimi vrati', 'Dvoriščna ograja v antracitni barvi', 'Drsna dvoriščna vrata'],
   },
 ];
 

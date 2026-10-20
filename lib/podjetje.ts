@@ -41,7 +41,7 @@ export const izdelki: Izdelek[] = [
 /** Izdelki v spustnem meniju glave: kratek opis in fotografija */
 export const izdelkiMeni = [
   { href: '/ograje', naziv: 'Ograje in vrata', opis: 'Balkonske, dvoriščne, notranje', slika: 'media/galleries/15/featured/zunanje-balkonske-ograje-hifa-23.jpg' },
-  { href: '/nadstreski', naziv: 'Nadstreški', opis: 'Za avto, vhod in teraso', slika: 'media/galleries/13/featured/nadstreski-hifa-09.jpg' },
+  { href: '/nadstreski', naziv: 'Nadstreški', opis: 'Za avto, vhod in teraso', slika: 'media/35/nadstreski-hifa-09.jpg' },
   { href: '/stopnisca', naziv: 'Stopnišča', opis: 'Zunanja in notranja', slika: 'files/media/novi-vstop-stopnisca.jpg' },
   { href: '/storitve', naziv: 'Konstrukcije', opis: 'Nosilci, podesti, lokali', slika: 'media/357/ostalo-hifa-19.jpg' },
   { href: '/holler-diy', naziv: 'Holler DIY', opis: 'Avstrijska alu vrata', slika: 'media/galleries/22/featured/vrata-holler-thumb.jpg' },

@@ -264,7 +264,8 @@ function tla(w: number, d: number, M: Materiali, m: THREE.Material = M.tla) {
 
 /* ---------------------------------------------------------------- ograje */
 
-export type Model = { skupina: THREE.Group; sredisce: THREE.Vector3; velikost: number; smer?: THREE.Vector3 };
+/** podlaga: barva podstavka makete, na katerem model stoji (podstavek doda scena glede na velikost modela) */
+export type Model = { skupina: THREE.Group; sredisce: THREE.Vector3; velikost: number; smer?: THREE.Vector3; podlaga?: 'trava' | 'parket' };
 
 export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   const g = new THREE.Group();
@@ -272,11 +273,11 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
 
   if (o.tip === 'balkonska') {
     // fasada s ploščo balkona v nadstropju; ograja na robu plošče
-    const L = Math.min(o.dolzina, 24);
+    // v 3D pokažemo reprezentativen del (do 10 m), da je model pregleden in cel na podstavku
+    const L = Math.min(o.dolzina, 10);
     const yPlosce = 2.9;
     const globina = 1.6;
-    g.add(tla(L + 12, 14, M, M.trava));
-    g.add(skatla(L + 3, 6.2, 0.3, M.fasada, L / 2, 3.1, -0.15));
+    g.add(skatla(L + 1.2, 6.0, 0.3, M.fasada, L / 2, 3.0, -0.15));
     g.add(skatla(L + 0.3, 0.2, globina, M.beton, L / 2, yPlosce - 0.1, globina / 2));
     // okna in balkonska vrata v nadstropju, okna v pritličju
     const nOken = Math.max(1, Math.floor(L / 2.6));
@@ -312,17 +313,16 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   }
 
   if (o.tip === 'dvoriscna') {
-    const L = Math.min(o.dolzina, 40);
+    const L = Math.min(o.dolzina, 7);
     const vrata = o.vrata !== 'brez';
     const prehod = o.osebniPrehod ? 1 : 0;
     const sv = vrata ? o.sirinaVrat : 0;
     const skupaj = L + prehod + sv;
     const podzidek = o.montaza === 'podzidek' ? 0.4 : 0;
-    g.add(tla(skupaj + 16, 18, M, M.trava));
     // dovoz za vrati
     if (vrata) {
-      const dovoz = tla(sv + 0.6, 9, M, M.asfalt);
-      dovoz.position.set(L + prehod + sv / 2, 0.005, -3);
+      const dovoz = tla(sv + 0.6, 3.6, M, M.asfalt);
+      dovoz.position.set(L + prehod + sv / 2, 0.005, -1.9);
       g.add(dovoz);
     }
     if (podzidek) g.add(skatla(L, podzidek, 0.25, M.beton, L / 2, podzidek / 2, 0));
@@ -414,8 +414,7 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     const dolzinaStopnic = n * globinaStopnice;
     const sirina = 1.3;
     const podest = Math.max(1.2, Math.min(o.dolzina - Math.hypot(dolzinaStopnic, dvig), 6));
-    g.add(tla(14, 12, M, M.trava));
-    g.add(skatla(dolzinaStopnic + podest + 4, 4.2, 0.3, M.fasada, (dolzinaStopnic + podest) / 2, 2.1, -sirina - 0.15));
+    g.add(skatla(dolzinaStopnic + podest + 1, 3.8, 0.3, M.fasada, (dolzinaStopnic + podest) / 2, 2.1, -sirina - 0.15));
     // vhodna vrata
     const vr = okno(1.1, 2.15, M);
     vr.position.set(dolzinaStopnic + podest / 2, dvig + 1.08, -sirina + 0.02);
@@ -443,8 +442,7 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   const dolzinaStopnic = n * globinaStopnice;
   const sirina = 1.0;
   const zgornji = Math.max(0.6, Math.min(o.dolzina - Math.hypot(dolzinaStopnic, dvig), 5));
-  g.add(tla(dolzinaStopnic + zgornji + 6, 8, M, M.parket));
-  g.add(skatla(dolzinaStopnic + zgornji + 3, dvig + 2.8, 0.2, M.fasada, (dolzinaStopnic + zgornji) / 2, (dvig + 2.8) / 2, -sirina - 0.1));
+  g.add(skatla(dolzinaStopnic + zgornji + 0.8, dvig + 2.8, 0.2, M.fasada, (dolzinaStopnic + zgornji) / 2, (dvig + 2.8) / 2, -sirina - 0.1));
   // zgornja etaža
   g.add(skatla(zgornji + 0.6, 0.25, sirina + 1.2, M.fasada, dolzinaStopnic + zgornji / 2 + 0.3, dvig - 0.125, -sirina / 2 + 0.6));
   for (let i = 0; i < n; i++) {
@@ -462,7 +460,7 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   const vodoravna = ograjaVzdolz(zgornji, h, o.polnilo, M);
   vodoravna.position.set(dolzinaStopnic + 0.1, dvig, 0.02);
   g.add(vodoravna);
-  return { skupina: g, sredisce: new THREE.Vector3((dolzinaStopnic + zgornji) / 2, dvig * 0.6, -sirina / 2), velikost: dolzinaStopnic + zgornji + 1, smer: new THREE.Vector3(-0.7, 0.35, 1) };
+  return { skupina: g, sredisce: new THREE.Vector3((dolzinaStopnic + zgornji) / 2, dvig * 0.6, -sirina / 2), velikost: dolzinaStopnic + zgornji + 1, smer: new THREE.Vector3(-0.7, 0.35, 1), podlaga: 'parket' };
 }
 
 /* ---------------------------------------------------------------- nadstreški */
@@ -496,22 +494,18 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
   const prerez = 0.12;
   const zadaj = -D; // z zadnjega roba (stena)
 
-  g.add(tla(W + 14, D + 14, M, M.trava));
   const tlakovano = tla(W + 0.6, D + 0.6, M, M.tla);
   tlakovano.position.set(0, 0.004, -D / 2);
   g.add(tlakovano);
 
   if (obObjektu) {
-    g.add(skatla(W + 5, H + 3.2, 0.3, M.fasada, 0, (H + 3.2) / 2, zadaj - 0.15));
+    g.add(skatla(W + 1.4, H + 1.4, 0.3, M.fasada, 0, (H + 1.4) / 2, zadaj - 0.15));
     const vr = okno(1.1, 2.2, M);
     vr.position.set(-W * 0.18, 1.1, zadaj + 0.02);
     g.add(vr);
     const ok = okno(1.4, 1.3, M);
     ok.position.set(W * 0.22, 1.45, zadaj + 0.02);
     g.add(ok);
-    const ok2 = okno(1.2, 1.3, M);
-    ok2.position.set(0, H + 1.6, zadaj + 0.02);
-    g.add(ok2);
   }
 
   // stebri: spredaj vedno, zadaj samo pri samostojnem; vmesni steber pri širokih
@@ -579,4 +573,39 @@ export function sprosti(o: THREE.Object3D) {
     if (Array.isArray(mat)) mat.forEach((y) => y.dispose());
     else if (mat && !(mat as THREE.MeshStandardMaterial).alphaMap) mat.dispose();
   });
+}
+
+/**
+ * Podstavek makete: zaobljena plošča, ki se prilagodi velikosti modela, da nič ne sega čez rob.
+ * Zgornja ploskev je na višini 0, model stoji na njej.
+ */
+export function podstavek(model: THREE.Object3D, podlaga: 'trava' | 'parket' = 'trava') {
+  const box = new THREE.Box3().setFromObject(model);
+  const rob = 0.9;
+  const x1 = box.min.x - rob, x2 = box.max.x + rob;
+  const z1 = box.min.z - rob, z2 = box.max.z + rob;
+  const w = x2 - x1, d = z2 - z1;
+  const r = Math.min(0.6, w / 6, d / 6);
+  const oblika = new THREE.Shape();
+  oblika.moveTo(-w / 2 + r, -d / 2);
+  oblika.lineTo(w / 2 - r, -d / 2);
+  oblika.quadraticCurveTo(w / 2, -d / 2, w / 2, -d / 2 + r);
+  oblika.lineTo(w / 2, d / 2 - r);
+  oblika.quadraticCurveTo(w / 2, d / 2, w / 2 - r, d / 2);
+  oblika.lineTo(-w / 2 + r, d / 2);
+  oblika.quadraticCurveTo(-w / 2, d / 2, -w / 2, d / 2 - r);
+  oblika.lineTo(-w / 2, -d / 2 + r);
+  oblika.quadraticCurveTo(-w / 2, -d / 2, -w / 2 + r, -d / 2);
+  const deb = 0.22;
+  const geo = new THREE.ExtrudeGeometry(oblika, { depth: deb, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 3, curveSegments: 10 });
+  geo.rotateX(-Math.PI / 2); // ploskev obliko postavi vodoravno, debelina gre navzgor
+  geo.translate((x1 + x2) / 2, -deb - 0.03, (z1 + z2) / 2);
+  const zgoraj = new THREE.MeshStandardMaterial({ color: podlaga === 'parket' ? 0xcbb795 : 0xd5d9d1, roughness: 0.95 });
+  const stran = new THREE.MeshStandardMaterial({ color: podlaga === 'parket' ? 0x9c8665 : 0xb2b8ae, roughness: 0.9 });
+  // ExtrudeGeometry: skupina 0 = ploskvi (spodaj, zgoraj), skupina 1 = stranice
+  const mesh = new THREE.Mesh(geo, [zgoraj, stran]);
+  mesh.receiveShadow = true;
+  mesh.castShadow = false;
+  mesh.name = 'podstavek';
+  return mesh;
 }

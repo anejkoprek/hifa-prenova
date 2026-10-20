@@ -14,6 +14,7 @@ export default function Glava() {
   const [odprt, setOdprt] = useState(false);
   const [scroll, setScroll] = useState(false);
   const [izdelkiOdprti, setIzdelkiOdprti] = useState(false);
+  const [mobIzdelki, setMobIzdelki] = useState(false);
   const gumb = useRef<HTMLButtonElement>(null);
   const izdelkiRef = useRef<HTMLLIElement>(null);
   const zapriCas = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -22,6 +23,7 @@ export default function Glava() {
   useEffect(() => {
     setOdprt(false);
     setIzdelkiOdprti(false);
+    setMobIzdelki(false);
   }, [pot]);
 
   // spustni meni izdelkov: zapri ob kliku drugam ali tipki Esc
@@ -162,20 +164,39 @@ export default function Glava() {
     {/* mobilni meni je zunaj glave: glava ima zameglitev ozadja, ki bi v Safariju ujela fiksni meni v svojo višino */}
       <div id="mobilni-meni" className={s.meni} data-odprt={odprt || undefined} hidden={!odprt}>
         <nav aria-label="Mobilna navigacija" className="wrap">
-          <p className={`napis ${s.meniNapis}`}>Izdelki</p>
-          <ul className={s.meniIzdelki}>
-            {izdelkiMeni.map((i) => (
-              <li key={i.href}>
-                <Link href={i.href} aria-current={aktiven(i.href) ? 'page' : undefined}>
-                  <span className={s.meniSlika}>
-                    <Image src={slika(i.slika)} alt="" fill sizes="120px" style={{ objectFit: 'cover' }} />
-                  </span>
-                  <span>{i.naziv}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
           <ul className={s.meniSeznam}>
+            <li>
+              <button
+                type="button"
+                className={s.meniRazpri}
+                aria-expanded={mobIzdelki}
+                aria-controls="mob-izdelki"
+                onClick={() => setMobIzdelki((v) => !v)}
+              >
+                Izdelki
+                <CaretDown size={22} weight="bold" aria-hidden />
+              </button>
+              <div id="mob-izdelki" className={s.meniPod} data-odprt={mobIzdelki || undefined} inert={!mobIzdelki}>
+                <div className={s.meniPodNotri}>
+                  <ul>
+                    {izdelkiMeni.map((i) => (
+                      <li key={i.href}>
+                        <Link href={i.href} aria-current={aktiven(i.href) ? 'page' : undefined}>
+                          <span className={s.meniSlika}>
+                            <Image src={slika(i.slika)} alt="" fill sizes="64px" style={{ objectFit: 'cover' }} />
+                          </span>
+                          <span className={s.meniPodBesedilo}>
+                            <strong>{i.naziv}</strong>
+                            <span>{i.opis}</span>
+                          </span>
+                          <ArrowRight size={18} aria-hidden />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </li>
             {navigacija.map((n) => (
               <li key={n.href}>
                 <Link href={n.href} aria-current={aktiven(n.href) ? 'page' : undefined}>
