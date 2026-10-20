@@ -39,7 +39,7 @@ const ROB = `stroke="var(--p-rob)" stroke-width="0.7" ${L}`;
 // ---------- območja delov (za zadetke, oblačke sprememb in zoom) ----------
 export const obmocja: Record<DelId, { x1: number; z1: number; x2: number; z2: number }> = {
   A: { x1: 2.05, z1: 3.25, x2: 7.55, z2: 4.85 },
-  B: { x1: 11.0, z1: 1.6, x2: 16.7, z2: 3.15 },
+  B: { x1: 11.0, z1: 2.2, x2: 16.8, z2: 3.35 },
   C: { x1: 6.65, z1: -0.05, x2: 10.55, z2: 1.85 },
   D: { x1: 11.3, z1: -0.05, x2: 16.5, z2: 1.62 },
 };
@@ -47,7 +47,7 @@ export const obmocja: Record<DelId, { x1: number; z1: number; x2: number; z2: nu
 // Točke, kjer stojijo oznake detajlov (krog s črko) in kam kaže kazalna črta.
 export const oznake: Record<DelId, { x: number; z: number; tx: number; tz: number }> = {
   A: { x: -0.05, z: 5.0, tx: 2.3, tz: 4.35 },
-  B: { x: 12.75, z: 3.55, tx: 13.6, tz: 2.75 },
+  B: { x: 12.45, z: 3.62, tx: 13.4, tz: 2.72 },
   C: { x: 7.3, z: 2.8, tx: 7.35, tz: 1.15 },
   D: { x: 16.95, z: 2.0, tx: 15.9, tz: 1.2 },
 };
@@ -194,27 +194,20 @@ function okno(out: string[], x1: number, z1: number, x2: number, z2: number, del
   out.push(rect(x1 - 0.05, z1 - 0.05, x2 + 0.05, z1, `fill="var(--p-polica)" ${TANKA}`)); // polica
 }
 
-// ---------- oblaček spremembe (kot na revidiranih načrtih) ----------
-export function oblacek(id: DelId): string {
+// ---------- izbor dela: okvir z vogalnimi oznakami (kot izbira na CAD načrtu) ----------
+export function izbor(id: DelId, rob = 0.16) {
   const o = obmocja[id];
-  const x1 = X(o.x1), x2 = X(o.x2), y1 = Y(o.z2), y2 = Y(o.z1);
-  const loki: string[] = [];
-  const korak = 26;
-  const rr = 15;
-  const stran = (ax: number, ay: number, bx: number, by: number) => {
-    const d = Math.hypot(bx - ax, by - ay);
-    const n = Math.max(2, Math.round(d / korak));
-    for (let i = 1; i <= n; i++) {
-      const tx = ax + ((bx - ax) * i) / n;
-      const ty = ay + ((by - ay) * i) / n;
-      loki.push(`A ${rr} ${rr} 0 0 1 ${r(tx)} ${r(ty)}`);
-    }
-  };
-  stran(x1, y1, x2, y1);
-  stran(x2, y1, x2, y2);
-  stran(x2, y2, x1, y2);
-  stran(x1, y2, x1, y1);
-  return `M ${r(x1)} ${r(y1)} ${loki.join(' ')} Z`;
+  const x = X(o.x1 - rob), y = Y(o.z2 + rob);
+  const w = r((o.x2 - o.x1 + 2 * rob) * 100), h = r((o.z2 - o.z1 + 2 * rob) * 100);
+  const d = r(Math.min(42, w * 0.18, h * 0.32)); // dolžina vogalne oznake
+  const x2 = r(x + w), y2 = r(y + h);
+  const koti = [
+    `M ${x} ${r(y + d)} V ${y} H ${r(x + d)}`,
+    `M ${r(x2 - d)} ${y} H ${x2} V ${r(y + d)}`,
+    `M ${x2} ${r(y2 - d)} V ${y2} H ${r(x2 - d)}`,
+    `M ${r(x + d)} ${y2} H ${x} V ${r(y2 - d)}`,
+  ].join(' ');
+  return { x, y, w, h, koti };
 }
 
 // ---------- glavna risba ----------
@@ -279,25 +272,29 @@ export function risiProcelje(iz: ProceljeIzbira): string {
   const rb = iz.B.ral;
   const stebriB = [11.42, 16.42];
   if (iz.B.oblika === 'enokapnica') {
-    // strešina pada proti gledalcu, zato je vidna nad čelno lego
-    const ploskev = [pt(11.0, 2.62), pt(16.6, 2.62), pt(16.6, 2.98), pt(11.0, 2.98)].join(' ');
-    defs.push(`<clipPath id="p-kr"><polygon points="${ploskev}"/></clipPath>`);
-    const kr: string[] = [`<polygon points="${ploskev}" fill="var(--p-steklo)"/>`];
-    for (let x = 11.0; x <= 16.6; x += 0.93) kr.push(rect(x, 2.62, x + 0.06, 2.98, `fill="${rb}"`));
-    kr.push(line(11.6, 2.66, 12.4, 2.94, `stroke="var(--p-odsev)" stroke-width="2" ${L}`));
-    kr.push(line(14.2, 2.66, 15.0, 2.94, `stroke="var(--p-odsev)" stroke-width="2" ${L}`));
-    o.push(`<g clip-path="url(#p-kr)">${kr.join('')}</g>`);
-    o.push(`<polygon points="${ploskev}" fill="none" ${CRTA}/>`);
-    o.push(rect(11.0, 2.42, 16.6, 2.62, `fill="${rb}" ${ROB}`));
-    o.push(rect(11.0, 2.36, 16.66, 2.46, `fill="${rb}" ${ROB} style="filter:brightness(1.18)"`)); // žleb
+    // enokapnica: pritrjena visoko na zid hiše, strešina pada proti zunanjemu stebru, žleb na nizkem koncu
+    const zZid = 3.08, zRob = 2.5, deb = 0.17;
+    const zg = (x: number) => zZid + ((x - 11.0) * (zRob - zZid)) / (16.62 - 11.0);
+    // stenska letev
+    o.push(rect(11.0, zZid - 0.16, 11.1, zZid + 0.24, `fill="${rb}" ${ROB}`));
+    // kritina (steklo) nad nosilcem, z odsevi
+    const kritina = [pt(11.1, zg(11.1) + deb), pt(16.62, zg(16.62) + deb), pt(16.62, zg(16.62) + deb + 0.06), pt(11.1, zg(11.1) + deb + 0.06)].join(' ');
+    o.push(`<polygon points="${kritina}" fill="var(--p-steklo)" ${TANKA}/>`);
+    // poševni stranski nosilec
+    const nosilec = [pt(11.1, zg(11.1)), pt(16.62, zg(16.62)), pt(16.62, zg(16.62) + deb), pt(11.1, zg(11.1) + deb)].join(' ');
+    o.push(`<polygon points="${nosilec}" fill="${rb}" ${ROB}/>`);
+    o.push(`<line x1="${X(11.1)}" y1="${Y(zg(11.1) + deb - 0.04)}" x2="${X(16.62)}" y2="${Y(zg(16.62) + deb - 0.04)}" stroke="var(--p-rob)" stroke-width="0.6" ${L}/>`);
+    // žleb na nizkem koncu
+    o.push(rect(16.58, zRob - 0.06, 16.78, zRob + deb + 0.04, `fill="${rb}" ${ROB} style="filter:brightness(1.18)"`));
+    // zunanji steber nosi strešino, pri zidu ga ne potrebuje
+    o.push(rect(16.36, 0, 16.48, zRob, `fill="${rb}" ${ROB}`));
   } else {
     o.push(rect(11.0, 2.4, 16.6, 2.74, `fill="${rb}" ${ROB}`));
     o.push(line(11.0, 2.7, 16.6, 2.7, `stroke="var(--p-rob)" stroke-width="0.6" ${L}`));
     o.push(rect(11.0, 2.74, 16.6, 2.78, `fill="${rb}" ${ROB} style="filter:brightness(1.2)"`));
+    for (const x of stebriB) o.push(rect(x - 0.06, 0, x + 0.06, 2.42, `fill="${rb}" ${ROB}`));
+    o.push(rect(11.0, 2.2, 11.08, 2.42, `fill="${rb}"`)); // pritrditev na zid
   }
-  for (const x of stebriB) o.push(rect(x - 0.06, 0, x + 0.06, 2.42, `fill="${rb}" ${ROB}`));
-  o.push(rect(11.0, 2.2, 11.08, 2.42, `fill="${rb}"`)); // pritrditev na zid
-
   // ---- D: dvoriščna ograja, osebni prehod in vrata ----
   const rd = iz.D.ral;
   const podzidek = (x1: number, x2: number) => o.push(rect(x1, 0, x2, 0.3, `fill="var(--p-beton)" ${CRTA}`));

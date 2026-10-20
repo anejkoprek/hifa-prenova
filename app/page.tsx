@@ -24,8 +24,8 @@ const detajli = [
     ],
     href: '/ograje',
     galerija: 'zunanje-balkonske-ograje',
-    slike: [izGalerije('zunanje-balkonske-ograje', 23), izGalerije('zunanje-balkonske-ograje', 49), izGalerije('zunanje-balkonske-ograje', 59)],
-    alt: ['Balkonska ograja v antracitni barvi', 'Balkonska ograja z vodoravnimi letvicami', 'Balkonska ograja s polnim polnilom'],
+    slike: [izGalerije('zunanje-balkonske-ograje', 23), izGalerije('zunanje-balkonske-ograje', 71), izGalerije('zunanje-balkonske-ograje', 59)],
+    alt: ['Balkonska ograja z vodoravnimi letvicami v antracitni barvi', 'Balkonska ograja s konzolnim nosilcem na moderni hiši', 'Balkonska ograja iz perforirane pločevine'],
   },
   {
     crka: 'B',
@@ -54,8 +54,8 @@ const detajli = [
     ],
     href: '/stopnisca',
     galerija: 'stopnisca',
-    slike: [galerija('zunanje-stopniscne-ograje')!.naslovnica, izGalerije('stopnisca', 22), izGalerije('notranje-ograje', 37)],
-    alt: ['Zunanja stopniščna ograja', 'Zunanje kovinsko stopnišče', 'Notranja stopniščna ograja'],
+    slike: [galerija('zunanje-stopniscne-ograje')!.naslovnica, izGalerije('stopnisca', 8), izGalerije('notranje-ograje', 37)],
+    alt: ['Zunanja stopniščna ograja', 'Zunanje kovinsko stopnišče ob hiši', 'Notranja stopniščna ograja'],
   },
   {
     crka: 'D',
@@ -76,12 +76,12 @@ const detajli = [
 
 const trak = [
   { pot: izGalerije('zunanje-balkonske-ograje', 12), alt: 'Balkonska ograja' },
-  { pot: izGalerije('nadstreski', 41), alt: 'Nadstrešek' },
-  { pot: izGalerije('notranje-ograje', 18), alt: 'Notranja ograja ob stopnicah' },
-  { pot: izGalerije('zunanje-dvoriscne-ograje', 22), alt: 'Dvoriščna ograja' },
+  { pot: izGalerije('nadstreski', 25), alt: 'Nadstrešek nad teraso ob hiši' },
+  { pot: izGalerije('notranje-ograje', 31), alt: 'Notranja ograja z lesenim ročajem' },
+  { pot: izGalerije('zunanje-dvoriscne-ograje', 29), alt: 'Dvoriščna ograja z vodoravnimi letvami' },
   { pot: izGalerije('stopnisca', 8), alt: 'Kovinsko stopnišče' },
   { pot: izGalerije('ostalo', 21), alt: 'Kovinska konstrukcija' },
-  { pot: izGalerije('zunanje-balkonske-ograje', 66), alt: 'Balkonska ograja s steklom' },
+  { pot: izGalerije('zunanje-balkonske-ograje', 59), alt: 'Balkonska ograja iz perforirane pločevine' },
   { pot: izGalerije('holler-diy', 2), alt: 'Holler DIY drsna vrata z osebnim prehodom' },
 ];
 
