@@ -42,7 +42,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const gate = vrata !== 'brez' ? Math.min(Math.max(o.sirinaVrat ?? 4, 1), 8) : 0;
   const prehod = dvorisce && o.osebniPrehod ? 1.0 : 0;
   const gap = 0.14;
-  const maxPrikaz = stopnice ? 4.2 : dvorisce ? Math.max(2.6, 8.5 - gate - prehod) : 6;
+  const maxPrikaz = stopnice ? 5 : dvorisce ? Math.max(3, 12 - gate - prehod) : 10;
   const dolzina = Math.max(o.dolzina, 0.5);
   const Ls = Math.min(dolzina, maxPrikaz);
   const prekinjeno = dolzina > maxPrikaz + 0.001;

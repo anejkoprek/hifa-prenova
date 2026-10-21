@@ -83,6 +83,14 @@ const trak = [
   { pot: izGalerije('ostalo', 21), alt: 'Kovinska konstrukcija' },
   { pot: izGalerije('zunanje-balkonske-ograje', 59), alt: 'Balkonska ograja iz perforirane pločevine' },
   { pot: izGalerije('holler-diy', 2), alt: 'Holler DIY drsna vrata z osebnim prehodom' },
+  { pot: izGalerije('nadstreski', 60), alt: 'Nadstrešek za avto' },
+  { pot: izGalerije('stopnisca', 6), alt: 'Zunanje stopnišče ob hiši' },
+  { pot: izGalerije('zunanje-dvoriscne-ograje', 41), alt: 'Dvoriščna ograja v antracitni barvi' },
+  { pot: izGalerije('notranje-ograje', 37), alt: 'Notranja stopniščna ograja' },
+  { pot: izGalerije('stopnisca', 23), alt: 'Kovinsko stopnišče na vrtu' },
+  { pot: izGalerije('nadstreski', 30), alt: 'Steklen nadstrešek nad teraso' },
+  { pot: izGalerije('zunanje-balkonske-ograje', 71), alt: 'Balkonska ograja na novogradnji' },
+  { pot: izGalerije('zunanje-dvoriscne-ograje', 6), alt: 'Dvoriščna ograja z drsnimi vrati' },
 ];
 
 export default function Domov() {
@@ -235,7 +243,7 @@ export default function Domov() {
       </section>
 
       {/* PREJ / POTEM */}
-      <section className="sekcija" aria-labelledby="pp-h">
+      <section className="sekcija--ozka" aria-labelledby="pp-h">
         <div className={`wrap ${s.ppMreza}`}>
           <div className={s.ppBesedilo}>
             <h2 className="h2" id="pp-h">Prej in potem</h2>

@@ -194,8 +194,32 @@
 
 /* mere */
 .mera { display: grid; gap: 0.5rem; }
+.meraGlava { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
 .meraOznaka { font-weight: 620; font-size: var(--step--1); }
+.meraRazpon { font-size: var(--step--2); color: var(--jeklo); font-variant-numeric: tabular-nums; }
 .meraVrstica { display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; }
+.meraVrstica[data-gumbi] { grid-template-columns: 1fr auto; }
+.meraKontrole { display: flex; align-items: center; gap: 0.35rem; }
+.meraVrstica[data-gumbi] .meraVnos { width: 104px; }
+.meraGumb {
+  display: grid; place-items: center; flex: none;
+  width: 44px; height: 48px;
+  border: 1px solid var(--crta-mocna);
+  border-radius: var(--r-ctrl);
+  background: var(--bela);
+  color: var(--crnilo);
+  touch-action: manipulation;
+  transition: background-color 140ms var(--ease-out), transform 100ms var(--ease-out);
+}
+@media (max-width: 520px) {
+  .meraVrstica[data-gumbi] { grid-template-columns: 1fr; gap: 0.4rem; }
+  .meraVrstica[data-gumbi] .meraVnos { flex: 1; width: auto; }
+}
+.meraGumb:active:not(:disabled) { transform: scale(0.94); }
+.meraGumb:disabled { opacity: 0.4; cursor: not-allowed; }
+@media (hover: hover) and (pointer: fine) {
+  .meraGumb:hover:not(:disabled) { background: var(--list); }
+}
 .meraVnos { position: relative; display: block; }
 .meraVnos :global(.vnos) { padding-right: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .enota { position: absolute; right: 0.8rem; top: 50%; translate: 0 -50%; color: var(--jeklo); font-size: var(--step--1); pointer-events: none; }

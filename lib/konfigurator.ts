@@ -54,6 +54,14 @@ export const visinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto
   'stopniscna-notranja': { min: 90, max: 120, privzeto: 100 },
 };
 
+/** razpon dolžine ograje po vrsti: od kratkega balkona do ograje okoli celega dvorišča */
+export const dolzinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto: number }> = {
+  balkonska: { min: 1, max: 30, privzeto: 8 },
+  dvoriscna: { min: 2, max: 80, privzeto: 15 },
+  'stopniscna-zunanja': { min: 1.5, max: 15, privzeto: 5 },
+  'stopniscna-notranja': { min: 1.5, max: 15, privzeto: 5 },
+};
+
 export const montazeZaTip: Record<TipOgraje, { id: Montaza; naziv: string; opis: string }[]> = {
   balkonska: [
     { id: 'vrh', naziv: 'Z vrha', opis: 'Stebri stojijo na plošči' },
@@ -139,7 +147,7 @@ export function ograjaIzUrl(q: URLSearchParams): OgrajaStanje {
   return {
     tip,
     polnilo: izbira(q.get('polnilo'), polnilaZaTip[tip], polnilaZaTip[tip][0]),
-    dolzina: omeji(stevilo(q, 'dolzina', tip === 'dvoriscna' ? 15 : privzetaOgraja.dolzina), 1, 60),
+    dolzina: omeji(stevilo(q, 'dolzina', dolzinaZaTip[tip].privzeto), dolzinaZaTip[tip].min, dolzinaZaTip[tip].max),
     visina: omeji(stevilo(q, 'visina', v.privzeto), v.min, v.max),
     montaza: montaze.length ? izbira(q.get('montaza'), montaze, montaze[0]) : 'vrh',
     material: izbira(q.get('material'), materiali.map((m) => m.id), 'aluminij'),

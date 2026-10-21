@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Phone, EnvelopeSimple, MapPin, Clock, Quotes } from '@phosphor-icons/react/ssr';
 import Foto from './Foto';
+import TrakVrstice from './TrakVrstice';
 import Povprasevanje from './Povprasevanje';
 import { mnenja, podjetje, postopek, pogostaVprasanja } from '@/lib/podjetje';
 import { steviloSlik } from '@/lib/galerije';
@@ -43,22 +44,22 @@ export function Mnenja() {
     </figcaption>
   );
   return (
-    <section className={`sekcija ${s.mnenja}`} aria-labelledby="mnenja-h">
+    <section className={`sekcija--ozka ${s.mnenja}`} aria-labelledby="mnenja-h">
       <div className="wrap">
         <div className={`${s.glavaSekcije} ${s.mnenjaGlava}`}>
           <p className={`napis ${s.oznaka}`}>Mnenja strank</p>
           <h2 className="h2" id="mnenja-h">Zadovoljne stranke so naša najboljša referenca</h2>
-          <p className="lead">Nekaj besed strank po zaključeni montaži, zapisanih tako, kot so nam jih poslale.</p>
+          <p className="lead">Besede strank po zaključeni montaži.</p>
         </div>
         <div className={s.mnenjaMreza}>
           <figure className={`${s.mnenje} ${s.glavno} razkrij`}>
-            <Quotes size={40} weight="fill" aria-hidden className={s.narekovaj} />
+            <Quotes size={30} weight="fill" aria-hidden className={s.narekovaj} />
             <blockquote><p>{glavno.besedilo}</p></blockquote>
             <Podpis m={glavno} />
           </figure>
           {ostala.map((m, i) => (
             <figure key={m.ime} className={`${s.mnenje} razkrij`} style={{ transitionDelay: `${(i + 1) * 80}ms` }}>
-              <Quotes size={26} weight="fill" aria-hidden className={s.narekovaj} />
+              <Quotes size={20} weight="fill" aria-hidden className={s.narekovaj} />
               <blockquote><p>{m.besedilo}</p></blockquote>
               <Podpis m={m} />
             </figure>
@@ -78,15 +79,11 @@ export function Trak({ slike }: { slike: { pot: string; alt: string }[] }) {
           Odpri galerijo <ArrowRight size={16} weight="bold" aria-hidden />
         </Link>
       </div>
-      <ul className={s.trak} tabIndex={0} aria-label="Izbrane fotografije, podrsajte vodoravno">
-        {slike.map((t) => (
-          <li key={t.pot} data-pokoncna={!lezeca(t.pot) || undefined}>
-            <Link href="/galerije" tabIndex={-1}>
-              <Foto pot={t.pot} alt={t.alt} sizes="(min-width: 1024px) 28vw, 72vw" okvir={false} style={{ height: '100%' }} />
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <TrakVrstice
+        vrstice={[0, 1].map((v) =>
+          slike.filter((_, i) => i % 2 === v).map((t) => ({ ...t, pokoncna: !lezeca(t.pot) }))
+        )}
+      />
     </section>
   );
 }

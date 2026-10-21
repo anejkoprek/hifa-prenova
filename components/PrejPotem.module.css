@@ -2,6 +2,9 @@
 .okno {
   position: relative;
   aspect-ratio: 4 / 3;
+  /* na prenosniku je cela primerjava (fotografija in izbira projektov) na enem zaslonu */
+  max-height: calc(100svh - var(--glava) - 13rem);
+  width: 100%;
   border-radius: var(--r-media);
   overflow: hidden;
   background: var(--papir-2);

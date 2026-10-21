@@ -9,7 +9,21 @@ import { ralHex } from './ral';
 
 export type Materiali = ReturnType<typeof ustvariMateriale>;
 
+const predpomnilnik = new Map<string, ReturnType<typeof novaMateriala>>();
+
+/** materiali se ob vsaki spremembi mere ne ustvarjajo znova (brez ponovnega prevajanja senčilnikov in zatikanja) */
 export function ustvariMateriale(ral: string, material: string) {
+  const kljuc = `${ral}|${material}`;
+  let M = predpomnilnik.get(kljuc);
+  if (!M) {
+    M = novaMateriala(ral, material);
+    Object.values(M).forEach((m) => (m.userData.trajen = true));
+    predpomnilnik.set(kljuc, M);
+  }
+  return M;
+}
+
+function novaMateriala(ral: string, material: string) {
   const barva = new THREE.Color(ralHex(ral));
   // prašno barvanje: rahlo kovinsko, satenast sijaj; inox nekoliko bolj gladek
   const kovina = new THREE.MeshStandardMaterial({ color: barva, metalness: 0.45, roughness: material === 'inox' ? 0.36 : 0.5 });
@@ -273,8 +287,7 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
 
   if (o.tip === 'balkonska') {
     // fasada s ploščo balkona v nadstropju; ograja na robu plošče
-    // v 3D pokažemo reprezentativen del (do 10 m), da je model pregleden in cel na podstavku
-    const L = Math.min(o.dolzina, 10);
+    const L = o.dolzina;
     const yPlosce = 2.9;
     const globina = 1.6;
     g.add(skatla(L + 1.2, 6.0, 0.3, M.fasada, L / 2, 3.0, -0.15));
@@ -313,29 +326,75 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   }
 
   if (o.tip === 'dvoriscna') {
-    const L = Math.min(o.dolzina, 7);
+    // dolžina se razporedi okoli parcele: spredaj do 10 m ob vratih, nato obe stranici in zadnja stran
+    const L = o.dolzina;
     const vrata = o.vrata !== 'brez';
     const prehod = o.osebniPrehod ? 1 : 0;
     const sv = vrata ? o.sirinaVrat : 0;
-    const skupaj = L + prehod + sv;
+    const F = Math.min(L, 10);
+    const sirinaParcele = F + prehod + sv + (vrata ? 0.05 : 0);
+    let ostanek = L - F;
+    const stranica = Math.min(ostanek / 2, 25);
+    ostanek -= stranica * 2;
+    const zadaj = Math.min(ostanek, sirinaParcele);
     const podzidek = o.montaza === 'podzidek' ? 0.4 : 0;
+    // en odsek ograje (s podzidkom ali točkovnimi temelji) vzdolž lokalne osi X
+    const odsek = (dol: number) => {
+      const k = new THREE.Group();
+      if (dol < 0.3) return k;
+      if (podzidek) k.add(skatla(dol, podzidek, 0.25, M.beton, dol / 2, podzidek / 2, 0));
+      const og = ograjaVzdolz(dol, h, o.polnilo, M);
+      og.position.y = podzidek;
+      k.add(og);
+      if (!podzidek) {
+        const n = Math.max(1, Math.round(dol / 1.8));
+        for (let i = 0; i <= n; i++) k.add(skatla(0.3, 0.04, 0.3, M.betonTemen, (i * dol) / n, 0.02, 0));
+      }
+      return k;
+    };
     // dovoz za vrati
     if (vrata) {
       const dovoz = tla(sv + 0.6, 3.6, M, M.asfalt);
-      dovoz.position.set(L + prehod + sv / 2, 0.005, -1.9);
+      dovoz.position.set(F + prehod + sv / 2, 0.005, -1.9);
       g.add(dovoz);
     }
-    if (podzidek) g.add(skatla(L, podzidek, 0.25, M.beton, L / 2, podzidek / 2, 0));
-    const ograja = ograjaVzdolz(L, h, o.polnilo, M);
-    ograja.position.set(0, podzidek, 0);
-    g.add(ograja);
-    if (!podzidek) {
-      // točkovni temelji
-      const n = Math.max(1, Math.round(L / 1.8));
-      for (let i = 0; i <= n; i++) g.add(skatla(0.3, 0.04, 0.3, M.betonTemen, (i * L) / n, 0.02, 0));
+    g.add(odsek(F));
+    if (stranica >= 0.3) {
+      const levo = odsek(stranica);
+      levo.rotation.y = Math.PI / 2; // od sprednjega vogala nazaj
+      g.add(levo);
+      const desno = odsek(stranica);
+      desno.rotation.y = Math.PI / 2;
+      desno.position.x = sirinaParcele;
+      g.add(desno);
+    }
+    if (zadaj >= 0.3) {
+      const zad = odsek(zadaj);
+      zad.position.z = -stranica;
+      g.add(zad);
+    }
+    // hiša na parceli, ko je ta dovolj velika
+    if (F >= 7 && stranica >= 8) {
+      const hw = Math.min(F - 3, 9), hd = Math.min(stranica - 5, 8), hv = 3;
+      const cx = 1.5 + hw / 2, cz = -(3 + hd / 2);
+      g.add(skatla(hw, hv, hd, M.fasada, cx, hv / 2, cz));
+      const streha = new THREE.Shape([new THREE.Vector2(-hd / 2 - 0.4, 0), new THREE.Vector2(hd / 2 + 0.4, 0), new THREE.Vector2(0, 2.2)]);
+      const sg = new THREE.ExtrudeGeometry(streha, { depth: hw + 0.6, bevelEnabled: false });
+      sg.rotateY(Math.PI / 2);
+      sg.translate(cx - hw / 2 - 0.3, hv, cz);
+      const st = new THREE.Mesh(sg, M.okvirOkna);
+      st.castShadow = true;
+      st.receiveShadow = true;
+      g.add(st);
+      const vh = okno(1.1, 2.1, M);
+      vh.position.set(cx + hw * 0.2, 1.05, cz + hd / 2 + 0.03);
+      g.add(vh);
+      const ok = okno(1.4, 1.2, M);
+      ok.position.set(cx - hw * 0.22, 1.5, cz + hd / 2 + 0.03);
+      g.add(ok);
     }
     const visinaVrat = h + podzidek;
-    let x = L;
+    let x = F;
     if (prehod) {
       // osebni prehod: krilo, rahlo odprto
       g.add(steber(x + prehod, 0, visinaVrat + 0.05, M, 0, 0.1));
@@ -401,20 +460,22 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
         g.add(skatla(0.06, 0.1, 0.04, M.motor, x + sv + 0.05, 0.75, 0.08)); // fotocelica
       }
     }
-    // kamera gleda na vrata in zadnjih nekaj metrov ograje, ostala ograja se izgubi v daljavi
-    const fokus = Math.max(0, skupaj - (sv + prehod + 5));
-    return { skupina: g, sredisce: new THREE.Vector3((fokus + skupaj) / 2, 0.8, 0), velikost: Math.min(skupaj, sv + prehod + 3.5) };
+    return { skupina: g, sredisce: new THREE.Vector3(sirinaParcele / 2, 0.8, -stranica / 2), velikost: Math.max(sirinaParcele, stranica) };
   }
 
   if (o.tip === 'stopniscna-zunanja') {
     // betonske stopnice do vhodnega podesta ob fasadi, ograja ob stopnicah in podestu
+    // dolžina ograje = poševni del ob stopnicah + podest; daljša ograja pomeni več stopnic
     const nastop = 0.17, globinaStopnice = 0.3;
-    const n = 7;
+    const naStopnico = Math.hypot(globinaStopnice, nastop);
+    const zelenPodest = Math.min(Math.max(o.dolzina * 0.3, 1), 4);
+    const n = Math.max(2, Math.round((o.dolzina - zelenPodest) / naStopnico));
     const dvig = n * nastop;
     const dolzinaStopnic = n * globinaStopnice;
     const sirina = 1.3;
-    const podest = Math.max(1.2, Math.min(o.dolzina - Math.hypot(dolzinaStopnic, dvig), 6));
-    g.add(skatla(dolzinaStopnic + podest + 1, 3.8, 0.3, M.fasada, (dolzinaStopnic + podest) / 2, 2.1, -sirina - 0.15));
+    const podest = Math.max(1, o.dolzina - n * naStopnico);
+    const visinaFasade = dvig + 2.7;
+    g.add(skatla(dolzinaStopnic + podest + 1, visinaFasade, 0.3, M.fasada, (dolzinaStopnic + podest) / 2, visinaFasade / 2, -sirina - 0.15));
     // vhodna vrata
     const vr = okno(1.1, 2.15, M);
     vr.position.set(dolzinaStopnic + podest / 2, dvig + 1.08, -sirina + 0.02);
@@ -437,11 +498,13 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
 
   // notranja stopniščna: kovinska nosilca z lesenimi nastopnimi ploskvami ob steni, ograja na prosti strani
   const nastop = 0.18, globinaStopnice = 0.27;
-  const n = 15;
+  const naStopnico = Math.hypot(globinaStopnice, nastop);
+  const zelenZgornji = Math.min(Math.max(o.dolzina * 0.25, 0.6), 4);
+  const n = Math.max(3, Math.round((o.dolzina - zelenZgornji) / naStopnico));
   const dvig = n * nastop;
   const dolzinaStopnic = n * globinaStopnice;
   const sirina = 1.0;
-  const zgornji = Math.max(0.6, Math.min(o.dolzina - Math.hypot(dolzinaStopnic, dvig), 5));
+  const zgornji = Math.max(0.6, o.dolzina - n * naStopnico);
   g.add(skatla(dolzinaStopnic + zgornji + 0.8, dvig + 2.8, 0.2, M.fasada, (dolzinaStopnic + zgornji) / 2, (dvig + 2.8) / 2, -sirina - 0.1));
   // zgornja etaža
   g.add(skatla(zgornji + 0.6, 0.25, sirina + 1.2, M.fasada, dolzinaStopnic + zgornji / 2 + 0.3, dvig - 0.125, -sirina / 2 + 0.6));
@@ -570,8 +633,8 @@ export function sprosti(o: THREE.Object3D) {
     const m = x as THREE.Mesh;
     if (m.geometry) m.geometry.dispose();
     const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-    if (Array.isArray(mat)) mat.forEach((y) => y.dispose());
-    else if (mat && !(mat as THREE.MeshStandardMaterial).alphaMap) mat.dispose();
+    if (Array.isArray(mat)) mat.forEach((y) => !y.userData.trajen && y.dispose());
+    else if (mat && !mat.userData.trajen && !(mat as THREE.MeshStandardMaterial).alphaMap) mat.dispose();
   });
 }
 

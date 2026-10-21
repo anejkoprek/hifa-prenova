@@ -140,8 +140,7 @@
 .ppBesedilo { display: grid; gap: 1rem; align-content: start; }
 .ppBesedilo :global(.povezava) { justify-self: start; }
 @media (min-width: 1000px) {
-  .ppMreza { grid-template-columns: 0.75fr 1.9fr; gap: 4.5rem; }
-  .ppBesedilo { position: sticky; top: calc(var(--glava) + 2rem); align-self: start; }
+  .ppMreza { grid-template-columns: 0.8fr 1.6fr; gap: 4rem; align-items: center; }
 }
 
 /* ---------- materiali: RAL karta ---------- */

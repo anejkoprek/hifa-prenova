@@ -23,6 +23,7 @@ type Svet = {
   model: THREE.Group | null;
   zahtevaj: () => void;
   pogled: (animiraj: boolean) => void;
+  prilagodi: () => void;
   okvir: { sredisce: THREE.Vector3; velikost: number; smer?: THREE.Vector3 } | null;
 };
 
@@ -44,8 +45,12 @@ export default function Scena3D(props: Props) {
       setNapaka(true);
       return;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // na telefonih nižja ločljivost risanja: ostra slika, a pol manj dela za grafični čip
+    const groba = window.matchMedia('(pointer: coarse)').matches;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, groba ? 1.5 : 1.75));
     renderer.shadowMap.enabled = true;
+    // scena je mirujoča: senco narišemo samo ob spremembi modela, ne pri vsakem obratu kamere
+    renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.92;
@@ -72,7 +77,7 @@ export default function Scena3D(props: Props) {
     const sonce = new THREE.DirectionalLight(0xfff8ef, 2.4);
     sonce.position.set(-8, 14, 10);
     sonce.castShadow = true;
-    sonce.shadow.mapSize.set(2048, 2048);
+    sonce.shadow.mapSize.set(groba ? 1024 : 2048, groba ? 1024 : 2048);
     sonce.shadow.bias = -0.0004;
     sonce.shadow.normalBias = 0.02;
     sonce.shadow.radius = 4;
@@ -135,10 +140,11 @@ export default function Scena3D(props: Props) {
       controls.maxDistance = razdalja * 2.2;
       // senca pokrije cel model
       const r = o.velikost + 1;
-      Object.assign(sonce.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: 60 });
+      Object.assign(sonce.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: Math.max(60, r * 4) });
       sonce.shadow.camera.updateProjectionMatrix();
       sonce.target.position.copy(o.sredisce);
-      sonce.position.copy(o.sredisce).add(new THREE.Vector3(-8, 14, 10));
+      sonce.position.copy(o.sredisce).add(new THREE.Vector3(-8, 14, 10).normalize().multiplyScalar(Math.max(18, r * 2)));
+      renderer.shadowMap.needsUpdate = true;
 
       if (!animiraj || zmanjsano) {
         camera.position.copy(cilj);
@@ -160,7 +166,52 @@ export default function Scena3D(props: Props) {
       requestAnimationFrame(korak);
     };
 
-    svet.current = { renderer, scene, camera, controls, model: null, zahtevaj, pogled, okvir: null };
+    // ob spremembi mere: obiskovalčev kot pogleda ostane, kamera se gladko odmakne ali približa, da je cel model v kadru
+    let prilagajanje = 0;
+    const prilagodi = () => {
+      const o = svet.current?.okvir;
+      if (!o) return;
+      const vfov = THREE.MathUtils.degToRad(camera.fov);
+      const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+      const razdalja = (o.velikost / Math.sin(Math.min(vfov, hfov) / 2)) * 0.9;
+      const r = o.velikost + 1;
+      Object.assign(sonce.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: Math.max(60, r * 4) });
+      sonce.shadow.camera.updateProjectionMatrix();
+      sonce.target.position.copy(o.sredisce);
+      sonce.position.copy(o.sredisce).add(new THREE.Vector3(-8, 14, 10).normalize().multiplyScalar(Math.max(18, r * 2)));
+      renderer.shadowMap.needsUpdate = true;
+      controls.minDistance = razdalja * 0.35;
+      controls.maxDistance = razdalja * 2.2;
+      const smer = camera.position.clone().sub(controls.target).normalize();
+      const zdaj = camera.position.distanceTo(controls.target);
+      // majhne spremembe ne premikajo kamere, da slika med vlečenjem drsnika ne pleše
+      const premakni = Math.abs(zdaj - razdalja) / razdalja > 0.12 || controls.target.distanceTo(o.sredisce) > o.velikost * 0.15;
+      if (!premakni || zmanjsano) {
+        if (premakni) {
+          controls.target.copy(o.sredisce);
+          camera.position.copy(o.sredisce).add(smer.multiplyScalar(razdalja));
+          controls.update();
+        }
+        zahtevaj();
+        return;
+      }
+      const t0 = performance.now();
+      const zT = controls.target.clone(), zD = zdaj;
+      const id = ++prilagajanje;
+      animacija = 1;
+      const korak = (t: number) => {
+        if (id !== prilagajanje) return;
+        const k = ease(Math.min(1, (t - t0) / 450));
+        controls.target.lerpVectors(zT, o.sredisce, k);
+        camera.position.copy(controls.target).add(smer.clone().multiplyScalar(zD + (razdalja - zD) * k));
+        if (k < 1) requestAnimationFrame(korak);
+        else animacija = 0;
+        zahtevaj();
+      };
+      requestAnimationFrame(korak);
+    };
+
+    svet.current = { renderer, scene, camera, controls, model: null, zahtevaj, pogled, prilagodi, okvir: null };
     velikost();
 
     return () => {
@@ -176,42 +227,53 @@ export default function Scena3D(props: Props) {
     };
   }, []);
 
-  // model: zgradi znova ob vsaki izbiri
+  // model: zgradi znova ob izbiri. Med vlečenjem drsnika gradimo največ enkrat na sličico (zadnja vrednost zmaga).
   const kljuc = JSON.stringify(props.izdelek === 'ograja' ? props.ograja : props.nadstresek);
+  const zadnjiProps = useRef(props);
+  zadnjiProps.current = props;
+  const cakajoca = useRef(0);
   useEffect(() => {
-    const w = svet.current;
-    if (!w) return;
-    if (w.model) {
-      w.scene.remove(w.model);
-      sprosti(w.model);
-    }
-    let rezultat;
-    if (props.izdelek === 'ograja') {
-      const M = ustvariMateriale(props.ograja.ral, props.ograja.material);
-      rezultat = modelOgraje(props.ograja, M);
-    } else {
-      const M = ustvariMateriale(props.nadstresek.ral, props.nadstresek.material);
-      rezultat = modelNadstreska(props.nadstresek, M);
-    }
-    w.model = rezultat.skupina;
-    // podstavek makete se prilagodi modelu, zato nič ne sega čez rob
-    w.model.add(podstavek(w.model, rezultat.podlaga));
-    w.scene.add(w.model);
-    // kamero premaknemo samo ob prvem prikazu ali menjavi vrste izdelka, ne ob vsaki izbiri
-    const tip = props.izdelek === 'ograja' ? props.ograja.tip : `ns-${props.nadstresek.postavitev}`;
-    const prvic = !w.okvir;
-    const novTip = zadnjiTip.current !== tip;
-    // okvir za kamero izračunamo iz dejanske velikosti modela s podstavkom
-    const okvir = new THREE.Box3().setFromObject(w.model);
-    const krogla = okvir.getBoundingSphere(new THREE.Sphere());
-    const sredisce = krogla.center.clone();
-    sredisce.y = Math.min(sredisce.y, okvir.min.y + (okvir.max.y - okvir.min.y) * 0.42);
-    w.okvir = { sredisce, velikost: krogla.radius * 0.82, smer: rezultat.smer };
-    zadnjiTip.current = tip;
-    if (prvic || novTip) w.pogled(prvic);
-    else w.zahtevaj();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (cakajoca.current) return;
+    cakajoca.current = requestAnimationFrame(() => {
+      cakajoca.current = 0;
+      const w = svet.current;
+      if (!w) return;
+      const p = zadnjiProps.current;
+      const star = w.model;
+      let rezultat;
+      if (p.izdelek === 'ograja') rezultat = modelOgraje(p.ograja, ustvariMateriale(p.ograja.ral, p.ograja.material));
+      else rezultat = modelNadstreska(p.nadstresek, ustvariMateriale(p.nadstresek.ral, p.nadstresek.material));
+      const model = rezultat.skupina;
+      // podstavek makete se prilagodi modelu, zato nič ne sega čez rob
+      model.add(podstavek(model, rezultat.podlaga));
+      model.matrixAutoUpdate = false;
+      model.updateMatrixWorld(true);
+      w.scene.add(model);
+      w.model = model;
+      // okvir za kamero iz dejanske velikosti modela s podstavkom
+      const okvir = new THREE.Box3().setFromObject(model);
+      const krogla = okvir.getBoundingSphere(new THREE.Sphere());
+      const sredisce = krogla.center.clone();
+      sredisce.y = Math.min(sredisce.y, okvir.min.y + (okvir.max.y - okvir.min.y) * 0.42);
+      const prvic = !w.okvir;
+      w.okvir = { sredisce, velikost: krogla.radius * 0.82, smer: rezultat.smer };
+      const tip = p.izdelek === 'ograja' ? p.ograja.tip : `ns-${p.nadstresek.postavitev}`;
+      const novTip = zadnjiTip.current !== tip;
+      zadnjiTip.current = tip;
+      if (prvic || novTip) w.pogled(prvic);
+      else w.prilagodi();
+      w.renderer.shadowMap.needsUpdate = true;
+      // stari model odstranimo šele po risanju novega: senčilniki ostanejo v uporabi in se ne prevajajo znova
+      w.renderer.render(w.scene, w.camera);
+      if (star) {
+        w.scene.remove(star);
+        w.renderer.shadowMap.needsUpdate = true;
+        w.renderer.render(w.scene, w.camera); // ista sličica: na zaslonu je samo nov model
+        sprosti(star);
+      }
+    });
   }, [kljuc]);
+  useEffect(() => () => cancelAnimationFrame(cakajoca.current), []);
 
   if (napaka) {
     return (

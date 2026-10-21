@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Check, LinkSimple, ArrowCounterClockwise, Cube, PencilRuler } from '@phosphor-icons/react';
+import { Check, LinkSimple, ArrowCounterClockwise, Cube, PencilRuler, Minus, Plus } from '@phosphor-icons/react';
 import Povprasevanje from './Povprasevanje';
 import PolniloIkona from './PolniloIkona';
 import { risiOgrajo } from '@/lib/risbe/ograja';
@@ -25,6 +25,7 @@ import {
   tipiOgraj,
   vrataMoznosti,
   visinaZaTip,
+  dolzinaZaTip,
   type NadstresekStanje,
   type OgrajaStanje,
 } from '@/lib/konfigurator';
@@ -115,6 +116,7 @@ function Mera({
   min,
   max,
   korak,
+  gumb,
   enota,
 }: {
   oznaka: string;
@@ -123,42 +125,74 @@ function Mera({
   min: number;
   max: number;
   korak: number;
+  /** korak gumbov − / + (npr. 0,5 m); brez njega ni gumbov */
+  gumb?: number;
   enota: string;
 }) {
-  const [tekst, setTekst] = useState(String(vrednost).replace('.', ','));
-  useEffect(() => setTekst(String(vrednost).replace('.', ',')), [vrednost]);
+  const decimalke = korak < 0.1 ? 2 : korak < 1 ? 1 : 0;
+  const zapis = (v: number) => String(+v.toFixed(decimalke)).replace('.', ',');
+  const [tekst, setTekst] = useState(zapis(vrednost));
+  useEffect(() => setTekst(zapis(vrednost)), [vrednost]); // eslint-disable-line react-hooks/exhaustive-deps
+  const omeji = (v: number) => +Math.min(max, Math.max(min, Math.round(v / korak) * korak)).toFixed(decimalke);
   const potrdi = (t: string) => {
     const v = Number(t.replace(',', '.'));
-    if (Number.isFinite(v)) nastavi(Math.min(max, Math.max(min, Math.round(v / korak) * korak)));
-    else setTekst(String(vrednost).replace('.', ','));
+    if (Number.isFinite(v)) nastavi(omeji(v));
+    else setTekst(zapis(vrednost));
+  };
+  // gumba skočita na naslednjo okroglo vrednost (7,3 → 7,5 → 8,0)
+  const premakni = (smer: 1 | -1) => {
+    if (!gumb) return;
+    const naslednja = smer > 0 ? Math.floor(vrednost / gumb + 1e-6) * gumb + gumb : Math.ceil(vrednost / gumb - 1e-6) * gumb - gumb;
+    nastavi(omeji(naslednja));
   };
   const id = `mera-${oznaka.replace(/\W+/g, '-')}`;
   return (
     <div className={s.mera}>
-      <label htmlFor={id} className={s.meraOznaka}>{oznaka}</label>
-      <div className={s.meraVrstica}>
+      <div className={s.meraGlava}>
+        <label htmlFor={id} className={s.meraOznaka}>{oznaka}</label>
+        <span className={s.meraRazpon}>{zapis(min)}–{zapis(max)} {enota}</span>
+      </div>
+      <div className={s.meraVrstica} data-gumbi={gumb ? '' : undefined}>
         <input
           type="range"
           min={min}
           max={max}
           step={korak}
           value={vrednost}
-          onChange={(e) => nastavi(+e.target.value)}
+          onChange={(e) => nastavi(omeji(+e.target.value))}
           aria-label={`${oznaka} (drsnik)`}
           className={s.drsnik}
           style={{ ['--p' as string]: `${((vrednost - min) / (max - min)) * 100}%` }}
         />
-        <span className={s.meraVnos}>
-          <input
-            id={id}
-            className="vnos"
-            inputMode="decimal"
-            value={tekst}
-            onChange={(e) => setTekst(e.target.value)}
-            onBlur={(e) => potrdi(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && potrdi((e.target as HTMLInputElement).value)}
-          />
-          <span className={s.enota}>{enota}</span>
+        <span className={s.meraKontrole}>
+          {gumb ? (
+            <button type="button" className={s.meraGumb} onClick={() => premakni(-1)} disabled={vrednost <= min} aria-label={`${oznaka}: manj za ${zapis(gumb)} ${enota}`}>
+              <Minus size={14} weight="bold" aria-hidden />
+            </button>
+          ) : null}
+          <span className={s.meraVnos}>
+            <input
+              id={id}
+              className="vnos"
+              inputMode="decimal"
+              value={tekst}
+              onChange={(e) => setTekst(e.target.value)}
+              onBlur={(e) => potrdi(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') potrdi((e.target as HTMLInputElement).value);
+                if (gumb && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                  e.preventDefault();
+                  premakni(e.key === 'ArrowUp' ? 1 : -1);
+                }
+              }}
+            />
+            <span className={s.enota}>{enota}</span>
+          </span>
+          {gumb ? (
+            <button type="button" className={s.meraGumb} onClick={() => premakni(1)} disabled={vrednost >= max} aria-label={`${oznaka}: več za ${zapis(gumb)} ${enota}`}>
+              <Plus size={14} weight="bold" aria-hidden />
+            </button>
+          ) : null}
         </span>
       </div>
     </div>
@@ -258,7 +292,8 @@ export default function Konfigurator() {
         n.visina = vis.privzeto;
         const mont = montazeZaTip[t];
         if (mont.length && !mont.some((m) => m.id === n.montaza)) n.montaza = mont[0].id;
-        if (t === 'dvoriscna' && o.tip !== 'dvoriscna') n.dolzina = Math.max(n.dolzina, 12);
+        // vsaka vrsta ima svoj smiseln razpon dolžine; ob menjavi vzamemo tipično dolžino za to vrsto
+        if (t !== o.tip) n.dolzina = dolzinaZaTip[t].privzeto;
       }
       return n;
     });
@@ -442,7 +477,7 @@ export default function Konfigurator() {
               </Korak>
 
               <Korak st={++st} naslov="Mere" namig="Približne mere so dovolj. Natančno izmerimo na objektu.">
-                <Mera oznaka="Dolžina ograje" vrednost={og.dolzina} nastavi={(v) => posodobiOg('dolzina', v)} min={1} max={60} korak={0.1} enota="m" />
+                <Mera oznaka="Dolžina ograje" vrednost={og.dolzina} nastavi={(v) => posodobiOg('dolzina', v)} min={dolzinaZaTip[og.tip].min} max={dolzinaZaTip[og.tip].max} korak={0.1} gumb={0.5} enota="m" />
                 <Mera
                   oznaka="Višina ograje"
                   vrednost={og.visina}
