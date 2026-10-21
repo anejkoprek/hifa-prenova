@@ -112,8 +112,23 @@
   .oznaka:not([aria-pressed='true']):hover { background: var(--crnilo); color: var(--bela); }
 }
 @media (max-width: 760px) {
-  .risba { aspect-ratio: 1760 / 950; width: calc(100% + 2 * var(--rob)); margin-inline: calc(var(--rob) * -1); }
-  .oznaka { --d: 32px; box-shadow: 0 0 0 3px var(--papir); }
+  /* na telefonu: risba kot tehnični list v okvirju, velika, a z robom in mrežo */
+  .risba {
+    aspect-ratio: 1820 / 980;
+    width: 100%;
+    border: 1px solid var(--crta);
+    border-radius: var(--r-media);
+    overflow: hidden;
+    background-color: var(--draw-bg);
+    background-image:
+      linear-gradient(var(--draw-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--draw-grid) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: -1px -1px;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 10px 30px -18px rgb(28 33 36 / 0.35);
+  }
+  .oznaka { --d: 32px; box-shadow: 0 0 0 3px var(--draw-bg); }
+  .cela { right: 8px; bottom: 8px; }
   /* nevidna večja ploskev za prst */
   .oznaka::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
 }

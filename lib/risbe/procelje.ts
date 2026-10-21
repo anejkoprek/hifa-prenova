@@ -20,7 +20,7 @@ export const SIRINA = 22.0; // m
 export const ZTOP = 9.5; // m
 export const VIEWBOX = { x: 0, y: 0, w: SIRINA * 100, h: (ZTOP + 0.45) * 100 };
 // na telefonu brez skrajnega desnega dela ograje, da je hiša večja
-export const VIEWBOX_OZEK = { x: 50, y: 30, w: 1760, h: 950 };
+export const VIEWBOX_OZEK = { x: 0, y: 20, w: 1820, h: 980 };
 
 const X = (x: number) => r((x + X0) * 100);
 const Y = (z: number) => r((ZTOP - z) * 100);

@@ -223,7 +223,9 @@ export default function Procelje() {
             const p = vOdstotkih(o.x, o.z, vb);
             if (p.left < -2 || p.left > 102 || p.top < -2 || p.top > 102) return null;
             // oznaka ne sme pasti čez rob risbe (na telefonu je risba obrezana)
-            p.left = Math.min(95.5, Math.max(4.5, p.left));
+            const rob = osnova.w !== VIEWBOX.w ? 7.5 : 4.5; // na telefonu v okvirju risbe malo več prostora
+            p.left = Math.min(100 - rob, Math.max(rob, p.left));
+            p.top = Math.min(100 - rob, Math.max(rob, p.top));
             return (
               <button
                 key={id}
