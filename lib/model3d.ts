@@ -607,6 +607,113 @@ function trapezna(sirina: number, globina: number, m: THREE.Material) {
   return new THREE.Mesh(geo, m);
 }
 
+/** material žleba: v barvi konstrukcije, malo bolj svetleč (pločevina) */
+function materialZleba(M: Materiali) {
+  return new THREE.MeshStandardMaterial({
+    color: (M.kovina as THREE.MeshStandardMaterial).color.clone().offsetHSL(0, 0, 0.07),
+    metalness: 0.6,
+    roughness: 0.32,
+    side: THREE.DoubleSide,
+  });
+}
+
+/** cev med dvema točkama */
+function cev(a: THREE.Vector3, b: THREE.Vector3, r: number, m: THREE.Material) {
+  const dol = a.distanceTo(b);
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, dol, 20), m);
+  mesh.position.copy(a).add(b).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  mesh.castShadow = true;
+  return mesh;
+}
+
+/**
+ * Viden žleb enokapnice: polkrožen profil z zavihanim robom, zaključni kapi, kljuke in
+ * odtočna cev z »labodjim vratom« ob desnem sprednjem stebru ter izlivnim kolenom spodaj.
+ */
+function zlebEnokapnice(W: number, yS: number, M: Materiali) {
+  const g = new THREE.Group();
+  const m = materialZleba(M);
+  const R = 0.07, t = 0.005;
+  const L = W + 0.24;
+  const zC = R + 0.02; // os žleba pred sprednjim nosilcem
+  const yC = yS + 0.1; // zgornji rob žleba tik pod kritino
+  // polkrožen presek (spodnja polovica kroga), izvlečen po dolžini
+  const profil = new THREE.Shape();
+  profil.absarc(0, 0, R, Math.PI, Math.PI * 2, false);
+  profil.lineTo(R - t, 0);
+  profil.absarc(0, 0, R - t, Math.PI * 2, Math.PI, true);
+  profil.lineTo(-R, 0);
+  const geo = new THREE.ExtrudeGeometry(profil, { depth: L, bevelEnabled: false, curveSegments: 20 });
+  geo.rotateY(-Math.PI / 2); // presek v ravnini YZ, dolžina po osi X
+  geo.translate(L / 2, yC, zC);
+  const zleb = new THREE.Mesh(geo, m);
+  zleb.castShadow = true;
+  zleb.receiveShadow = true;
+  g.add(zleb);
+  // zavihan sprednji rob (okrogla obroba)
+  const rob = cev(new THREE.Vector3(-L / 2, yC, zC + R), new THREE.Vector3(L / 2, yC, zC + R), 0.009, m);
+  g.add(rob);
+  // zaključni kapi
+  for (const x of [-L / 2, L / 2]) {
+    const kapa = new THREE.Mesh(new THREE.CircleGeometry(R, 24, Math.PI, Math.PI), m);
+    kapa.rotation.y = Math.PI / 2;
+    kapa.position.set(x, yC, zC);
+    g.add(kapa);
+  }
+  // kljuke na približno 80 cm
+  const nK = Math.max(2, Math.round(L / 0.8));
+  for (let i = 0; i <= nK; i++) {
+    const x = -L / 2 + 0.08 + (i * (L - 0.16)) / nK;
+    const k = new THREE.Mesh(new THREE.TorusGeometry(R + 0.004, 0.006, 6, 20, Math.PI), m);
+    k.rotation.set(0, Math.PI / 2, Math.PI);
+    k.position.set(x, yC, zC);
+    g.add(k);
+  }
+  // odtočna cev: iz dna žleba poševno k stebru, nato navpično ob stebru, spodaj izlivno koleno
+  const xC = W / 2 + 0.07; // tik ob zunanji strani desnega stebra
+  const rC = 0.04;
+  const p0 = new THREE.Vector3(W / 2 - 0.02, yC - R + 0.01, zC);
+  const p1 = new THREE.Vector3(W / 2 - 0.02, yC - R - 0.08, zC);
+  const p2 = new THREE.Vector3(xC, yC - R - 0.3, 0.05);
+  const p3 = new THREE.Vector3(xC, 0.24, 0.05);
+  const p4 = new THREE.Vector3(xC, 0.1, 0.17);
+  for (const [a, b] of [[p0, p1], [p1, p2], [p2, p3], [p3, p4]] as const) g.add(cev(a, b, rC, m));
+  for (const p of [p1, p2, p3]) {
+    const zgib = new THREE.Mesh(new THREE.SphereGeometry(rC, 16, 12), m);
+    zgib.position.copy(p);
+    g.add(zgib);
+  }
+  // objemke cevi na steber
+  for (const y of [0.7, 1.6]) {
+    if (y > p2.y) continue;
+    const obj = new THREE.Mesh(new THREE.TorusGeometry(rC + 0.006, 0.007, 6, 18), M.kovina);
+    obj.rotation.x = Math.PI / 2;
+    obj.position.set(xC, y, 0.05);
+    g.add(obj);
+    g.add(skatla(0.06, 0.02, 0.02, M.kovina, xC - 0.045, y, 0.05));
+  }
+  return g;
+}
+
+/** box: voda teče skozi steber, spodaj iz sprednje stranice pogleda kratek pravokoten izliv */
+function izlivStebra(x: number, prerez: number, M: Materiali) {
+  const g = new THREE.Group();
+  const m = materialZleba(M);
+  const izliv = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.035, 0.11), m);
+  izliv.position.set(0, 0, 0.055);
+  izliv.castShadow = true;
+  g.add(izliv);
+  // temna odprtina na koncu
+  const odprtina = new THREE.Mesh(new THREE.PlaneGeometry(0.036, 0.022), new THREE.MeshBasicMaterial({ color: 0x15181a }));
+  odprtina.position.set(0, 0, 0.111);
+  g.add(odprtina);
+  g.rotation.x = 0.18; // rahlo navzdol
+  g.position.set(x, 0.16, 0);
+  void prerez;
+  return g;
+}
+
 export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
   const g = new THREE.Group();
   const W = n.sirina, D = n.globina, H = n.visina;
@@ -641,14 +748,8 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
   const nagib = Math.atan2(naklon, D);
 
   if (n.tip === 'box') {
-    // odtok je speljan skozi sprednja vogalna stebra, spodaj iz stebra pogleda kratka cevka
-    for (const sx of [-1, 1]) {
-      const izliv = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.12, 14), M.kovina);
-      izliv.rotation.x = Math.PI / 2;
-      izliv.position.set(sx * (W / 2 - prerez / 2), 0.14, 0.04);
-      izliv.castShadow = true;
-      g.add(izliv);
-    }
+    // odtok je speljan skozi sprednja vogalna stebra, spodaj iz stebra pogleda kratek izliv
+    for (const sx of [-1, 1]) g.add(izlivStebra(sx * (W / 2 - prerez / 2), prerez, M));
     // ravna streha, skrita v obodnem okvirju višine 25 cm (žleb je v okvirju)
     const v = 0.25;
     g.add(skatla(W, v, 0.08, M.kovina, 0, yS + v / 2, -0.04));
@@ -659,24 +760,7 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
     // enokapnica: nosilec spredaj z vidnim žlebom in odtočno cevjo, nosilec zadaj (na steni ali stebrih)
     g.add(skatla(W + 0.1, 0.16, 0.12, M.kovina, 0, yS + 0.06, -0.06));
     g.add(skatla(W, 0.14, 0.1, M.kovina, 0, yZ + 0.05, zadaj + 0.06));
-    // žleb: U-profil pred nosilcem, rahlo svetlejši, da je viden
-    const zm = new THREE.MeshStandardMaterial({ color: (M.kovina as THREE.MeshStandardMaterial).color.clone().offsetHSL(0, 0, 0.16), metalness: 0.55, roughness: 0.35 });
-    const zZ = 0.1, wZ = 0.16, hZ = 0.14, yZleb = yS + 0.05;
-    g.add(skatla(W + 0.44, 0.01, wZ, zm, 0.1, yZleb - hZ / 2, zZ));
-    g.add(skatla(W + 0.44, hZ, 0.01, zm, 0.1, yZleb, zZ + wZ / 2));
-    g.add(skatla(W + 0.44, 0.02, 0.02, zm, 0.1, yZleb + hZ / 2, zZ + wZ / 2)); // zavihan rob
-    for (const ex of [-W / 2 - 0.12, W / 2 + 0.32]) g.add(skatla(0.01, hZ, wZ, zm, ex, yZleb, zZ));
-    // odtočna cev zunaj desnega sprednjega stebra, spodaj koleno stran od stebra
-    const cevX = W / 2 + 0.17;
-    const cev = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, yZleb - hZ / 2 - 0.16, 18), zm);
-    cev.position.set(cevX, (yZleb - hZ / 2 + 0.16) / 2, zZ);
-    cev.castShadow = true;
-    g.add(cev);
-    const koleno = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 18), zm);
-    koleno.rotation.x = Math.PI / 2.6;
-    koleno.position.set(cevX, 0.11, zZ + 0.08);
-    koleno.castShadow = true;
-    g.add(koleno);
+    g.add(zlebEnokapnice(W, yS, M));
   }
 
   // špirovci

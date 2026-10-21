@@ -178,9 +178,18 @@ export function risiNadstresek(o: NadstresekOpts): string {
   out.push(`<polygon points="${pts([[Wm, 0, hp], [Wm, Dm, hp + rise], [Wm, Dm, zB], [Wm, 0, zF]])}" fill="${barva}" ${edge} style="filter:brightness(0.82)"/>`);
   out.push(`<polygon points="${pts([[0, 0, hp], [Wm, 0, hp], [Wm, 0, zF], [0, 0, zF]])}" fill="${barva}" ${edge}/>`);
   if (o.tip === 'enokapnica') {
-    // viden žleb spredaj
-    out.push(`<polygon points="${pts([[-0.1, -0.16, hp - 0.06], [Wm + 0.36, -0.16, hp - 0.06], [Wm + 0.36, -0.16, hp + 0.1], [-0.1, -0.16, hp + 0.1]])}" fill="${barva}" ${edge} style="filter:brightness(1.4)"/>`);
-    out.push(line([-0.1, -0.16, hp + 0.1], [Wm + 0.36, -0.16, hp + 0.1], 'stroke="var(--draw-glare)" stroke-width="1.4"'));
+    // viden polkrožen žleb spredaj: sprednja ploskev, senca spodaj, svetel zavihan rob, kljuke
+    const yg = -0.15, zt = hp + 0.08, zb = hp - 0.05, x0 = -0.12, x1 = Wm + 0.12;
+    out.push(`<polygon points="${pts([[x0, yg, zb], [x1, yg, zb], [x1, yg, zt], [x0, yg, zt]])}" fill="${barva}" style="filter:brightness(1.3)"/>`);
+    out.push(`<polygon points="${pts([[x0, yg, zb], [x1, yg, zb], [x1, yg, zb + (zt - zb) * 0.38], [x0, yg, zb + (zt - zb) * 0.38]])}" fill="${barva}" opacity="0.55"/>`);
+    out.push(line([x0, yg, zt], [x1, yg, zt], `stroke="${barva}" stroke-width="${n(Math.max(2.5, 0.025 * s))}" stroke-linecap="round" style="filter:brightness(1.7)"`));
+    out.push(line([x0, yg, zb], [x1, yg, zb], 'stroke="var(--draw-edge)" stroke-width="0.8"'));
+    for (const x of [x0, x1]) out.push(line([x, yg, zb], [x, yg, zt], 'stroke="var(--draw-edge)" stroke-width="0.8"'));
+    const nK = Math.max(2, Math.round((x1 - x0) / 0.8));
+    for (let i = 1; i < nK; i++) {
+      const x = x0 + ((x1 - x0) * i) / nK;
+      out.push(line([x, yg, zb + 0.01], [x, yg, zt], 'stroke="var(--draw-edge)" stroke-width="0.7" opacity="0.6"'));
+    }
   }
 
   if (o.stranDesno) stena(Wm - 0.02);
@@ -188,15 +197,20 @@ export function risiNadstresek(o: NadstresekOpts): string {
   // sprednji stebri
   xs.forEach((x) => steber(x, 0));
   if (o.tip === 'enokapnica') {
-    // odtočna cev ob desnem sprednjem stebru
-    const cx = Wm + 0.3;
-    out.push(line([cx, -0.16, hp - 0.06], [cx, -0.16, 0.18], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.07 * s))}" stroke-linecap="round" style="filter:brightness(1.4)"`));
-    out.push(line([cx, -0.16, 0.18], [cx, -0.36, 0.06], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.07 * s))}" stroke-linecap="round" style="filter:brightness(1.4)"`));
+    // odtočna cev: iz dna žleba z labodjim vratom k stebru, navpično ob stebru z objemkami, spodaj izlivno koleno
+    const cx = Wm + 0.09, yc = -0.06, w = n(Math.max(3, 0.075 * s));
+    const pot: P3[] = [[Wm - 0.05, -0.15, hp - 0.05], [Wm - 0.05, -0.15, hp - 0.14], [cx, yc, hp - 0.36], [cx, yc, 0.24], [cx, -0.22, 0.08]];
+    const d = 'M ' + pot.map((p) => P(p).map(n).join(' ')).join(' L ');
+    out.push(`<path d="${d}" fill="none" stroke="var(--draw-edge)" stroke-width="${n(+w + 1.6)}" stroke-linejoin="round" stroke-linecap="round"/>`);
+    out.push(`<path d="${d}" fill="none" stroke="${barva}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" style="filter:brightness(1.3)"/>`);
+    out.push(`<path d="${d}" fill="none" stroke="var(--draw-glare)" stroke-width="1" stroke-linejoin="round" opacity="0.7" transform="translate(-${n(+w / 4)} 0)"/>`);
+    for (const z of [0.7, 1.6]) if (z < hp - 0.4) out.push(line([cx - 0.07, yc, z], [cx + 0.07, yc, z], `stroke="var(--draw-edge)" stroke-width="${n(Math.max(2, 0.025 * s))}"`));
   } else {
-    // box: odtok skozi steber, spodaj kratka cevka
+    // box: voda teče skozi steber, spodaj kratek pravokoten izliv
     for (const x of [xs[0], xs[xs.length - 1]]) {
       const xc = Math.min(Math.max(x, pw / 2), Wm - pw / 2);
-      out.push(line([xc, 0, 0.16], [xc, -0.16, 0.16], `stroke="${barva}" stroke-width="${n(Math.max(2.5, 0.045 * s))}" stroke-linecap="round" style="filter:brightness(1.15)"`));
+      out.push(`<polygon points="${pts([[xc - 0.025, 0, 0.18], [xc + 0.025, 0, 0.18], [xc + 0.025, -0.13, 0.15], [xc - 0.025, -0.13, 0.15]])}" fill="${barva}" stroke="var(--draw-edge)" stroke-width="0.8" style="filter:brightness(1.25)"/>`);
+      out.push(`<polygon points="${pts([[xc - 0.025, -0.13, 0.15], [xc + 0.025, -0.13, 0.15], [xc + 0.025, -0.13, 0.12], [xc - 0.025, -0.13, 0.12]])}" fill="#15181a"/>`);
     }
   }
 

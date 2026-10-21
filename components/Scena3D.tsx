@@ -166,49 +166,24 @@ export default function Scena3D(props: Props) {
       requestAnimationFrame(korak);
     };
 
-    // ob spremembi mere: obiskovalčev kot pogleda ostane, kamera se gladko odmakne ali približa, da je cel model v kadru
-    let prilagajanje = 0;
+    // ob spremembi mere kamera ostane natanko tam, kjer jo je obiskovalec pustil (kot, razdalja in središče);
+    // posodobimo le senco in meje povečave, ki ne smejo premakniti trenutnega pogleda
     const prilagodi = () => {
       const o = svet.current?.okvir;
       if (!o) return;
       const vfov = THREE.MathUtils.degToRad(camera.fov);
       const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
       const razdalja = (o.velikost / Math.sin(Math.min(vfov, hfov) / 2)) * 0.9;
+      const zdaj = camera.position.distanceTo(controls.target);
+      controls.minDistance = Math.min(razdalja * 0.35, zdaj);
+      controls.maxDistance = Math.max(razdalja * 2.2, zdaj);
       const r = o.velikost + 1;
       Object.assign(sonce.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: Math.max(60, r * 4) });
       sonce.shadow.camera.updateProjectionMatrix();
       sonce.target.position.copy(o.sredisce);
       sonce.position.copy(o.sredisce).add(new THREE.Vector3(-8, 14, 10).normalize().multiplyScalar(Math.max(18, r * 2)));
       renderer.shadowMap.needsUpdate = true;
-      controls.minDistance = razdalja * 0.35;
-      controls.maxDistance = razdalja * 2.2;
-      const smer = camera.position.clone().sub(controls.target).normalize();
-      const zdaj = camera.position.distanceTo(controls.target);
-      // majhne spremembe ne premikajo kamere, da slika med vlečenjem drsnika ne pleše
-      const premakni = Math.abs(zdaj - razdalja) / razdalja > 0.12 || controls.target.distanceTo(o.sredisce) > o.velikost * 0.15;
-      if (!premakni || zmanjsano) {
-        if (premakni) {
-          controls.target.copy(o.sredisce);
-          camera.position.copy(o.sredisce).add(smer.multiplyScalar(razdalja));
-          controls.update();
-        }
-        zahtevaj();
-        return;
-      }
-      const t0 = performance.now();
-      const zT = controls.target.clone(), zD = zdaj;
-      const id = ++prilagajanje;
-      animacija = 1;
-      const korak = (t: number) => {
-        if (id !== prilagajanje) return;
-        const k = ease(Math.min(1, (t - t0) / 450));
-        controls.target.lerpVectors(zT, o.sredisce, k);
-        camera.position.copy(controls.target).add(smer.clone().multiplyScalar(zD + (razdalja - zD) * k));
-        if (k < 1) requestAnimationFrame(korak);
-        else animacija = 0;
-        zahtevaj();
-      };
-      requestAnimationFrame(korak);
+      zahtevaj();
     };
 
     svet.current = { renderer, scene, camera, controls, model: null, zahtevaj, pogled, prilagodi, okvir: null };

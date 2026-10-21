@@ -533,7 +533,7 @@ export default function Konfigurator() {
                 ) : null}
               </Korak>
 
-              <Korak st={++st} naslov="Razporeditev" namig="Razmik med nosilnimi stebri in med vmesnimi letvicami. Ob izmeri preverimo, da ustreza predpisom.">
+              <Korak st={++st} naslov="Razporeditev" namig="Razmik med nosilnimi stebri in med vmesnimi letvicami. Pri balkonih in stopniščih sme biti razmik največ 10 cm, da ne more skozi otroška glava; ob izmeri preverimo, da ograja ustreza predpisom.">
                 <Mera
                   oznaka="Razmik nosilnih stebrov"
                   vrednost={og.razmikStebrov}
@@ -555,6 +555,11 @@ export default function Konfigurator() {
                     gumb={razmikPolnilaZaPolnilo[og.polnilo]!.korak}
                     enota="cm"
                   />
+                ) : null}
+                {og.tip !== 'dvoriscna' && razmikPolnilaZaPolnilo[og.polnilo] && og.razmikPolnila > 10 ? (
+                  <p className={`small ${s.opozorilo}`} role="status">
+                    Razmik nad 10 cm ne ustreza predpisom za balkone in stopnišča. Primeren je predvsem za dekorativne ograje.
+                  </p>
                 ) : null}
               </Korak>
 

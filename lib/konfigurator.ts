@@ -77,10 +77,10 @@ export const razmikStebrovZaTip: Record<TipOgraje, { min: number; max: number; p
 
 /** svetli razmik med letvicami / palicami (cm); polnila brez letvic (pločevina) nimajo drsnika */
 export const razmikPolnilaZaPolnilo: Partial<Record<Polnilo, { min: number; max: number; privzeto: number; korak: number; oznaka: string }>> = {
-  vertikalne: { min: 1, max: 8, privzeto: 2.5, korak: 0.5, oznaka: 'Razmik med letvicami' },
-  palicna: { min: 4, max: 10, privzeto: 9, korak: 0.5, oznaka: 'Razmik med palicami' },
-  horizontalne: { min: 0.5, max: 6, privzeto: 1.5, korak: 0.5, oznaka: 'Razmik med lamelami' },
-  zarki: { min: 8, max: 20, privzeto: 13, korak: 1, oznaka: 'Razmik med žarki' },
+  vertikalne: { min: 1, max: 20, privzeto: 2.5, korak: 0.5, oznaka: 'Razmik med vmesnimi letvicami' },
+  palicna: { min: 4, max: 20, privzeto: 9, korak: 0.5, oznaka: 'Razmik med palicami' },
+  horizontalne: { min: 0.5, max: 15, privzeto: 1.5, korak: 0.5, oznaka: 'Razmik med lamelami' },
+  zarki: { min: 8, max: 30, privzeto: 13, korak: 1, oznaka: 'Razmik med žarki' },
 };
 
 export const zakljucki: { id: Zakljucek; naziv: string; opis: string }[] = [
