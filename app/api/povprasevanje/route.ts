@@ -12,8 +12,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, napaka: 'Obrazca ni bilo mogoče prebrati.' }, { status: 400 });
   }
 
-  // past za robote: človek tega polja ne vidi
-  if (String(fd.get('spletna_stran') ?? '')) return NextResponse.json({ ok: true });
+  // Zaščita pred spamom. Robotu vedno odgovorimo »ok«, da ne ve, da je bil zavrnjen.
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'neznan';
+  const razlog = spam(fd, ip);
+  if (razlog) {
+    console.warn('[povpraševanje] zavrnjeno kot spam:', razlog, ip);
+    return NextResponse.json({ ok: true, demo: !aktivno() });
+  }
 
   const rezultat = shema.safeParse({
     izdelki: fd.getAll('izdelki').map(String),
@@ -55,6 +60,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, napaka: 'Sporočila ni bilo mogoče poslati. Pokličite nas na 031 688 704.' }, { status: 502 });
   }
   return NextResponse.json({ ok: true, demo: !aktivno() });
+}
+
+// ---------- zaščita pred spamom ----------
+const OKNO = 10 * 60_000; // 10 minut
+const NAJVEC_NA_OKNO = 4; // največ 4 povpraševanja z enega naslova v 10 minutah
+const oddaje = new Map<string, number[]>();
+
+function spam(fd: FormData, ip: string): string | null {
+  // 1) past: skrito polje, ki ga človek ne vidi, roboti pa ga izpolnijo
+  if (String(fd.get('spletna_stran') ?? '').trim()) return 'skrito polje';
+  // 2) prehitro: človek obrazca ne izpolni v manj kot 4 sekundah; brez podatka (brez JavaScripta) gre za robota
+  const cas = Number(fd.get('cas_izpolnjevanja'));
+  if (!Number.isFinite(cas) || cas < 4000) return `prehitro (${cas} ms)`;
+  // 3) povezave v sporočilu: pravo povpraševanje skoraj nikoli nima več kot ene
+  const besedilo = `${fd.get('sporocilo') ?? ''} ${fd.get('mere') ?? ''} ${fd.get('ime') ?? ''} ${fd.get('kraj') ?? ''}`;
+  if ((besedilo.match(/https?:\/\/|www\./gi) ?? []).length > 1) return 'povezave';
+  if (/https?:\/\/|www\./i.test(String(fd.get('ime') ?? ''))) return 'povezava v imenu';
+  // 4) preveč oddaj z istega naslova
+  const zdaj = Date.now();
+  const zadnje = (oddaje.get(ip) ?? []).filter((t) => zdaj - t < OKNO);
+  if (zadnje.length >= NAJVEC_NA_OKNO) return 'preveč oddaj';
+  zadnje.push(zdaj);
+  oddaje.set(ip, zadnje);
+  if (oddaje.size > 5000) oddaje.clear();
+  return null;
 }
 
 // Pošiljanje prek Resend (resend.com). Vklopi se, ko sta v .env.local nastavljena:

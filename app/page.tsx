@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Images } from '@phosphor-icons/react/ssr';
 import Procelje from '@/components/Procelje';
+import Uvodnik from '@/components/Uvodnik';
 import Foto from '@/components/Foto';
 import ProceljeDetajl from '@/components/ProceljeDetajl';
 import type { DelId } from '@/lib/risbe/procelje';
@@ -96,6 +97,7 @@ const trak = [
 export default function Domov() {
   return (
     <>
+      <Uvodnik />
       <Procelje />
 
       {/* DEJSTVA */}

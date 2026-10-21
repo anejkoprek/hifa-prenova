@@ -146,13 +146,13 @@ export default function Procelje() {
   const viewBox = `${vb.x} ${vb.y} ${vb.w} ${vb.h}`;
 
   return (
-    <section className={s.hero} aria-labelledby="hero-naslov" data-namig={namig || undefined}>
+    <section id="oblikuj" className={s.hero} aria-labelledby="hero-naslov" data-namig={namig || undefined}>
       <div className={s.list}>
         <div className={s.scena}>
         <div className={s.uvod}>
-          <h1 id="hero-naslov" className={`display ${s.naslov}`}>Ograje, nadstreški in stopnišča po meri</h1>
+          <h2 id="hero-naslov" className={`display ${s.naslov}`}>Oblikujte svojo hišo</h2>
           <p className={s.lead}>
-            Izdelamo jih v lastni delavnici v Njivercah pri Kidričevem in montiramo po vsej Sloveniji. Z vami od leta 1990.
+            Kliknite balkon, nadstrešek, stopnišče ali dvoriščno ograjo ter izberite polnilo, obliko in barvo.
           </p>
           <p className={s.namig}>
             <SlidersHorizontal size={18} weight="bold" aria-hidden />

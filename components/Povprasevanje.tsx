@@ -67,6 +67,11 @@ export default function Povprasevanje({ izdelki = [], konfiguracija = '', naslov
   const vnosDatotek = useRef<HTMLInputElement>(null);
   const [izGalerije, setIzGalerije] = useState<string[]>([]);
   const [galerijaOdprta, setGalerijaOdprta] = useState(false);
+  // čas, ko se je obrazec odprl (zaščita pred roboti, ki obrazec oddajo v delčku sekunde)
+  const odprtoOb = useRef(0);
+  useEffect(() => {
+    odprtoOb.current = Date.now();
+  }, []);
 
   // fotografija, izbrana v galeriji (?slika=...), in povpraševanje po meri (?izdelek=Drugo)
   useEffect(() => {
@@ -140,6 +145,7 @@ export default function Povprasevanje({ izdelki = [], konfiguracija = '', naslov
     const fd = new FormData(e.currentTarget);
     fd.delete('datoteke');
     priloge.forEach((p) => fd.append('datoteke', p.datoteka, p.datoteka.name));
+    fd.set('cas_izpolnjevanja', String(Date.now() - odprtoOb.current));
 
     const preveri = shema.safeParse({
       izdelki: fd.getAll('izdelki').map(String),
