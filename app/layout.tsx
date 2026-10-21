@@ -6,6 +6,7 @@ import Noga from '@/components/Noga';
 import Piskotki from '@/components/Piskotki';
 import MobilnaVrstica from '@/components/MobilnaVrstica';
 import Razkrij from '@/components/Razkrij';
+import NaVrh from '@/components/NaVrh';
 import { podjetje } from '@/lib/podjetje';
 
 export const metadata: Metadata = {
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="vsebina">{children}</main>
         <Noga />
         <MobilnaVrstica />
+        <NaVrh />
         <Piskotki />
         <Razkrij />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldPodjetje) }} />
