@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Phone, EnvelopeSimple, MapPin, Clock, Quotes } from '@phosphor-icons/react/ssr';
+import { ArrowRight, Phone, EnvelopeSimple, MapPin, Clock, Quotes, Star, ArrowUpRight } from '@phosphor-icons/react/ssr';
 import Foto from './Foto';
 import TrakVrstice from './TrakVrstice';
 import Povprasevanje from './Povprasevanje';
@@ -50,6 +50,14 @@ export function Mnenja() {
           <p className={`napis ${s.oznaka}`}>Mnenja strank</p>
           <h2 className="h2" id="mnenja-h">Zadovoljne stranke so naša najboljša referenca</h2>
           <p className="lead">Besede strank po zaključeni montaži.</p>
+          <a className={s.google} href={podjetje.google.url} target="_blank" rel="noopener noreferrer">
+            <span className={s.zvezdice} aria-hidden>
+              {[0, 1, 2, 3, 4].map((i) => <Star key={i} size={16} weight="fill" />)}
+            </span>
+            <strong>{podjetje.google.ocena.toLocaleString('sl-SI', { minimumFractionDigits: 1 })}</strong>
+            <span>· {podjetje.google.stevilo} mnenj na Googlu</span>
+            <ArrowUpRight size={14} weight="bold" aria-hidden />
+          </a>
         </div>
         <div className={s.mnenjaMreza}>
           <figure className={`${s.mnenje} ${s.glavno} razkrij`}>

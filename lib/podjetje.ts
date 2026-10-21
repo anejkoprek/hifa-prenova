@@ -12,6 +12,12 @@ export const podjetje = {
   obcina: 'Kidričevo',
   delovniCas: 'pon–pet, 8.00–16.00',
   facebook: 'https://www.facebook.com/profile.php?id=100044144323649',
+  // ocena na Google Zemljevidih (stanje 21. 10. 2026; ob objavi preveri in posodobi)
+  google: {
+    ocena: 5,
+    stevilo: 14,
+    url: 'https://www.google.com/maps/search/?api=1&query=Hifa%20Njiverce&query_place_id=ChIJl-VJQQ8tZUcRudP2WwR6ONQ',
+  },
   mapsLink:
     'https://www.google.com/maps/search/?api=1&query=HIFA+d.o.o.+Preglova+ulica+3+2325+Kidri%C4%8Devo',
   mapsEmbed:
@@ -111,11 +117,11 @@ export const pogostaVprasanja = [
   },
   {
     v: 'Katere materiale uporabljate?',
-    o: 'Nerjavno jeklo (inox), črno jeklo in aluminij preverjenih proizvajalcev. Izbira je odvisna od namena in nosilnosti izdelka ter vaših želja. Zunanje izdelke iz črnega jekla vroče cinkamo in prašno barvamo, inox in aluminij pa lahko prašno barvamo v katerikoli barvi po RAL lestvici.',
+    o: 'Nerjavno jeklo (inox), črno jeklo in aluminij preverjenih proizvajalcev. Izbira je odvisna od namena in nosilnosti izdelka ter vaših želja. Zunanje ograje izdelujemo iz aluminija ali inoxa, ki ju prašno barvamo v katerikoli barvi po RAL lestvici. Zunanje konstrukcije iz črnega jekla vroče cinkamo in prašno barvamo.',
   },
   {
     v: 'Kakšne kritine so na voljo za nadstreške?',
-    o: 'Najpogosteje kaljeno steklo, polikarbonat, trapezna pločevina z izolacijo in folija za ravne strehe. Svetujemo glede na namen nadstreška in vaše želje.',
+    o: 'Kaljeno steklo, polikarbonat, sendvič panel (pri enokapnicah) in folija Sikaplan (pri boxu z ravno streho). Svetujemo glede na namen nadstreška in vaše želje.',
   },
   {
     v: 'Koliko stane meter ograje ali kvadratni meter nadstreška?',

@@ -271,3 +271,6 @@
 
 .skupaj { margin-top: -0.4rem; color: var(--jeklo); font-variant-numeric: tabular-nums; }
 .skupaj strong { color: var(--crnilo); font-weight: 680; }
+
+.podnaslov { margin-top: 0.4rem; font-weight: 620; font-size: var(--step--1); }
+.opomba { margin-top: -0.2rem; max-width: 52ch; }

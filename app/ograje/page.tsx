@@ -27,20 +27,20 @@ export default function Ograje() {
           naslov: 'Zunanje ograje',
           odstavki: [
             'Zunanje ograje so primerne za balkone, terase, dvorišča, stopnice in vrtove. Vsako izdelamo po naročilu, v izvedbi, ki jo izberete.',
-            'Za odpornost na vreme poskrbi vroče cinkanje, prašno barvanje v katerikoli barvi po RAL lestvici ali kombinacija obojega. Vrsta zaščite je odvisna od kovine: črnega jekla, nerjavnega jekla ali aluminija.',
+            'Zunanje ograje izdelujemo iz aluminija ali inoxa, oboje prašno barvamo v katerikoli barvi po RAL lestvici. Izberete lahko tudi razmik stebrov in letvic.',
           ],
           legenda: [
-            ['Materiali', 'aluminij, inox, črno jeklo'],
-            ['Polnila', 'palice, letvice, steklo, žarki, perforirana pločevina'],
+            ['Materiali', 'aluminij, barvan inox'],
+            ['Polnila', 'palice, letvice, žarki; pri dvoriščnih tudi pločevina'],
             ['Montaža', 'z vrha ali s strani plošče, na podzidek ali temelje'],
-            ['Zaščita', 'vroče cinkanje, prašno barvanje po RAL'],
+            ['Zaščita', 'prašno barvanje po RAL'],
           ],
         },
         {
           id: 'notranje',
           naslov: 'Notranje ograje',
           odstavki: [
-            'Notranje ograje iz aluminija prašno barvamo v barvi, ki jo izberete po RAL lestvici. Lahko jih kombiniramo z lesom, steklom ali drugimi materiali, da se ujemajo s prostorom.',
+            'Notranje ograje iz aluminija prašno barvamo v barvi, ki jo izberete po RAL lestvici. Lahko jih kombiniramo z lesom ali drugimi materiali, da se ujemajo s prostorom.',
             'Svetujemo, kako ograjo oblikovati, da poleg estetskih in tehničnih zahtev ustreza tudi vsem varnostnim zahtevam, na primer pri višini in razmikih polnila.',
           ],
         },

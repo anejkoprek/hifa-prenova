@@ -66,6 +66,24 @@
 .oznaka { color: var(--zelena-temna); }
 .mnenjaGlava > .h2 { font-size: var(--step-2); text-wrap: balance; }
 .mnenjaMreza { display: grid; gap: 0.8rem; }
+.google {
+  justify-self: start;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  min-height: 40px;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--crta-mocna);
+  border-radius: 999px;
+  background: var(--bela);
+  font-size: var(--step--1);
+  text-decoration: none;
+  color: var(--crnilo-2);
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.google strong { color: var(--crnilo); font-weight: 720; }
+.zvezdice { display: inline-flex; gap: 1px; color: #e3a614; }
+@media (hover: hover) and (pointer: fine) {
+  .google:hover { border-color: var(--crnilo); }
+}
 .mnenjaGlava { margin-bottom: clamp(1.5rem, 1rem + 1.5vw, 2.25rem); }
 .mnenje {
   display: flex; flex-direction: column; gap: 1.1rem;

@@ -237,14 +237,14 @@ export default function Povprasevanje({ izdelki = [], konfiguracija = '', naslov
 
       <div className="polje">
         <label htmlFor={id('mere')}>
-          Približne mere <span className="muted">(neobvezno)</span>
+          Približne mere <span className="muted">(zaželeno)</span>
         </label>
         <input className="vnos" id={id('mere')} name="mere" placeholder="npr. balkon 8,5 m, višina 110 cm" />
       </div>
 
       <div className="polje">
         <span className="oznaka" id={id('dat-o')}>
-          Fotografije, skica ali načrt <span className="muted">(neobvezno, do {MAX_DATOTEK} datotek)</span>
+          Fotografije, skica ali načrt <span className="muted">(zaželeno, do {MAX_DATOTEK} datotek)</span>
         </span>
         <div
           className={s.spust}

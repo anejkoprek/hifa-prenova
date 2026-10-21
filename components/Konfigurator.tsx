@@ -29,6 +29,17 @@ import {
   jeStopnisce,
   podestRazpon,
   skupnaDolzina,
+  razmikStebrovZaTip,
+  razmikPolnilaZaPolnilo,
+  zakljucki,
+  sipkaRazpon,
+  podaljsekRazpon,
+  materialiZaTip,
+  materialiNadstreska,
+  kritineZaTip,
+  steneTipi,
+  steneSmeri,
+  PREKAT,
   type NadstresekStanje,
   type OgrajaStanje,
 } from '@/lib/konfigurator';
@@ -296,11 +307,27 @@ export default function Konfigurator() {
         const mont = montazeZaTip[t];
         if (mont.length && !mont.some((m) => m.id === n.montaza)) n.montaza = mont[0].id;
         // vsaka vrsta ima svoj smiseln razpon dolžine; ob menjavi vzamemo tipično dolžino za to vrsto
-        if (t !== o.tip) n.dolzina = dolzinaZaTip[t].privzeto;
+        if (t !== o.tip) {
+          n.dolzina = dolzinaZaTip[t].privzeto;
+          n.razmikStebrov = razmikStebrovZaTip[t].privzeto;
+        }
+        // zunanje ograje so brez jekla
+        if (!materialiZaTip(t).some((m) => m.id === n.material)) n.material = 'aluminij';
       }
+      // vsako polnilo ima svoj tipičen razmik letvic
+      if ((k === 'tip' || k === 'polnilo') && n.polnilo !== o.polnilo) n.razmikPolnila = razmikPolnilaZaPolnilo[n.polnilo]?.privzeto ?? 0;
+      // šipka ostane med četrtino in polovico višine
+      const sr = sipkaRazpon(n.visina);
+      if (k === 'visina' || k === 'tip') n.sipka = Math.min(sr.max, Math.max(sr.min, n.sipka));
       return n;
     });
-  const posodobiNs = <K extends keyof NadstresekStanje>(k: K, v: NadstresekStanje[K]) => setNs((o) => ({ ...o, [k]: v }));
+  const posodobiNs = <K extends keyof NadstresekStanje>(k: K, v: NadstresekStanje[K]) =>
+    setNs((o) => {
+      const n = { ...o, [k]: v };
+      // sendvič panel samo pri enokapnici, folija samo pri boxu
+      if (!kritineZaTip[n.tip].includes(n.kritina)) n.kritina = kritineZaTip[n.tip][0];
+      return n;
+    });
 
   // izbira je vedno v naslovu strani, da jo lahko delite ali shranite
   const iskanje = izdelek === 'ograja' ? ograjaVUrl(og) : nadstresekVUrl(ns);
@@ -324,6 +351,12 @@ export default function Konfigurator() {
         sirinaVrat: og.sirinaVrat,
         osebniPrehod: og.tip === 'dvoriscna' && og.osebniPrehod,
         pogon: og.pogon && og.vrata !== 'brez',
+        razmikStebrov: og.razmikStebrov,
+        razmikPolnila: og.razmikPolnila,
+        zakljucek: og.polnilo === 'palicna' ? og.zakljucek : 'rocaj',
+        sipka: Math.min(og.sipka, sipkaRazpon(og.visina).max),
+        brezStebrickov: og.tip === 'balkonska' && og.montaza === 'stran' && og.brezStebrickov,
+        podaljsek: og.tip === 'balkonska' && og.montaza === 'stran' ? og.podaljsek : 0,
         id: 'konf-og',
         h: og.tip === 'dvoriscna' ? 400 : og.tip === 'balkonska' ? 430 : 560,
       });
@@ -338,6 +371,8 @@ export default function Konfigurator() {
       barva: ralHex(ns.ral),
       stranLevo: ns.stranLevo,
       stranDesno: ns.stranDesno,
+      stenaTip: ns.stenaTip,
+      stenaSmer: ns.stenaSmer,
       id: 'konf-ns',
     });
   }, [izdelek, og, ns]);
@@ -478,6 +513,49 @@ export default function Konfigurator() {
                     </span>
                   )}
                 />
+                {og.polnilo === 'palicna' ? (
+                  <>
+                    <p className={s.podnaslov}>Zaključek palic zgoraj</p>
+                    <Kartice ime="zakljucek" moznosti={zakljucki} vrednost={og.zakljucek} nastavi={(v) => posodobiOg('zakljucek', v)} />
+                    {og.zakljucek === 'odprto' ? (
+                      <Mera
+                        oznaka="Višina vodoravne šipke od tal"
+                        vrednost={Math.min(og.sipka, sipkaRazpon(og.visina).max)}
+                        nastavi={(v) => posodobiOg('sipka', v)}
+                        min={sipkaRazpon(og.visina).min}
+                        max={sipkaRazpon(og.visina).max}
+                        korak={1}
+                        gumb={5}
+                        enota="cm"
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+              </Korak>
+
+              <Korak st={++st} naslov="Razporeditev" namig="Razmik med nosilnimi stebri in med vmesnimi letvicami. Ob izmeri preverimo, da ustreza predpisom.">
+                <Mera
+                  oznaka="Razmik nosilnih stebrov"
+                  vrednost={og.razmikStebrov}
+                  nastavi={(v) => posodobiOg('razmikStebrov', v)}
+                  min={razmikStebrovZaTip[og.tip].min}
+                  max={razmikStebrovZaTip[og.tip].max}
+                  korak={0.1}
+                  gumb={0.1}
+                  enota="m"
+                />
+                {razmikPolnilaZaPolnilo[og.polnilo] ? (
+                  <Mera
+                    oznaka={razmikPolnilaZaPolnilo[og.polnilo]!.oznaka}
+                    vrednost={og.razmikPolnila}
+                    nastavi={(v) => posodobiOg('razmikPolnila', v)}
+                    min={razmikPolnilaZaPolnilo[og.polnilo]!.min}
+                    max={razmikPolnilaZaPolnilo[og.polnilo]!.max}
+                    korak={razmikPolnilaZaPolnilo[og.polnilo]!.korak}
+                    gumb={razmikPolnilaZaPolnilo[og.polnilo]!.korak}
+                    enota="cm"
+                  />
+                ) : null}
               </Korak>
 
               <Korak st={++st} naslov="Mere" namig="Približne mere so dovolj. Natančno izmerimo na objektu.">
@@ -521,7 +599,7 @@ export default function Konfigurator() {
 
               {og.tip === 'dvoriscna' ? (
                 <Korak st={++st} naslov="Vrata in prehod">
-                  <Kartice ime="vrata" moznosti={vrataMoznosti} vrednost={og.vrata} nastavi={(v) => posodobiOg('vrata', v)} stolpci={4} />
+                  <Kartice ime="vrata" moznosti={vrataMoznosti} vrednost={og.vrata} nastavi={(v) => posodobiOg('vrata', v)} stolpci={2} />
                   {og.vrata !== 'brez' ? (
                     <Mera oznaka="Širina vrat" vrednost={og.sirinaVrat} nastavi={(v) => posodobiOg('sirinaVrat', v)} min={1} max={8} korak={0.1} enota="m" />
                   ) : null}
@@ -543,11 +621,37 @@ export default function Konfigurator() {
               {montazeZaTip[og.tip].length ? (
                 <Korak st={++st} naslov="Montaža">
                   <Kartice ime="montaza" moznosti={montazeZaTip[og.tip]} vrednost={og.montaza} nastavi={(v) => posodobiOg('montaza', v)} />
+                  {og.tip === 'balkonska' && og.montaza === 'stran' ? (
+                    <>
+                      <p className={`small muted ${s.opomba}`}>
+                        Na čelo plošče pritrdimo nosilno ploščo v barvi ograje, ograja je montirana nanjo.
+                      </p>
+                      <div className={s.stikala}>
+                        <label className="potrditev">
+                          <input type="checkbox" checked={og.brezStebrickov} onChange={(e) => posodobiOg('brezStebrickov', e.target.checked)} />
+                          <span><strong>Brez stebričkov</strong>, polja pritrjena neposredno na nosilno ploščo</span>
+                        </label>
+                      </div>
+                      <Mera
+                        oznaka="Ograja pod nivojem tal balkona"
+                        vrednost={og.podaljsek}
+                        nastavi={(v) => posodobiOg('podaljsek', v)}
+                        min={podaljsekRazpon.min}
+                        max={podaljsekRazpon.max}
+                        korak={1}
+                        gumb={5}
+                        enota="cm"
+                      />
+                      <p className={`small muted ${s.opomba}`}>
+                        0 cm: spodnji rob ograje je poravnan s tlemi balkona. Večja vrednost podaljša ograjo navzdol čez čelo plošče.
+                      </p>
+                    </>
+                  ) : null}
                 </Korak>
               ) : null}
 
               <Korak st={++st} naslov="Material in barva">
-                <Kartice ime="material" moznosti={materiali} vrednost={og.material} nastavi={(v) => posodobiOg('material', v)} stolpci={3} />
+                <Kartice ime="material" moznosti={materialiZaTip(og.tip)} vrednost={og.material} nastavi={(v) => posodobiOg('material', v)} stolpci={materialiZaTip(og.tip).length} />
                 <Barve ral={og.ral} nastavi={(k) => posodobiOg('ral', k)} />
               </Korak>
             </>
@@ -559,30 +663,36 @@ export default function Konfigurator() {
               <Korak st={++st} naslov="Postavitev">
                 <Kartice ime="ns-postavitev" moznosti={postavitve} vrednost={ns.postavitev} nastavi={(v) => posodobiNs('postavitev', v)} />
               </Korak>
-              <Korak st={++st} naslov="Mere" namig="Za en avto zadošča približno 3 × 5,5 m, za dva 5,5 × 5,5 m.">
+              <Korak st={++st} naslov="Mere" namig="Za en avto zadošča približno 3 × 5,5 m, za dva 5,5 × 5,5 m. Od širine 6 m dalje dodamo vmesni steber.">
                 <Mera oznaka="Širina" vrednost={ns.sirina} nastavi={(v) => posodobiNs('sirina', v)} min={2} max={12} korak={0.1} enota="m" />
                 <Mera oznaka="Globina" vrednost={ns.globina} nastavi={(v) => posodobiNs('globina', v)} min={1.5} max={8} korak={0.1} enota="m" />
                 <Mera oznaka="Svetla višina" vrednost={ns.visina} nastavi={(v) => posodobiNs('visina', v)} min={2.1} max={3.2} korak={0.05} enota="m" />
               </Korak>
               <Korak st={++st} naslov="Kritina">
-                <Kartice ime="ns-kritina" moznosti={kritine} vrednost={ns.kritina} nastavi={(v) => posodobiNs('kritina', v)} />
+                <Kartice ime="ns-kritina" moznosti={kritine.filter((k) => kritineZaTip[ns.tip].includes(k.id))} vrednost={ns.kritina} nastavi={(v) => posodobiNs('kritina', v)} stolpci={3} />
               </Korak>
-              <Korak st={++st} naslov="Stranske stene">
+              <Korak st={++st} naslov="Stranske stene" namig={`Lamele v aluminijastem okvirju, razdeljene na prekate po ${String(PREKAT).replace('.', ',')} m.`}>
                 <div className={s.stikala}>
                   <label className="potrditev">
                     <input type="checkbox" checked={ns.stranLevo} onChange={(e) => posodobiNs('stranLevo', e.target.checked)} />
-                    <span><strong>Levo</strong>, kaljeno steklo</span>
+                    <span><strong>Levo</strong></span>
                   </label>
                   <label className="potrditev">
                     <input type="checkbox" checked={ns.stranDesno} onChange={(e) => posodobiNs('stranDesno', e.target.checked)} />
-                    <span><strong>Desno</strong>, kaljeno steklo</span>
+                    <span><strong>Desno</strong></span>
                   </label>
                 </div>
+                {ns.stranLevo || ns.stranDesno ? (
+                  <>
+                    <Kartice ime="ns-stena" moznosti={steneTipi} vrednost={ns.stenaTip} nastavi={(v) => posodobiNs('stenaTip', v)} />
+                    <Kartice ime="ns-smer" moznosti={steneSmeri} vrednost={ns.stenaSmer} nastavi={(v) => posodobiNs('stenaSmer', v)} />
+                  </>
+                ) : null}
               </Korak>
               <Korak st={++st} naslov="Material in barva">
                 <Kartice
                   ime="ns-material"
-                  moznosti={materiali}
+                  moznosti={materialiNadstreska}
                   vrednost={ns.material}
                   nastavi={(v) => posodobiNs('material', v)}
                   stolpci={3}

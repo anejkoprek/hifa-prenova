@@ -16,16 +16,16 @@ const detajli = [
     crka: 'A',
     naslov: 'Balkonske ograje',
     besedilo:
-      'Ograje za balkone in terase iz aluminija, inoxa ali vroče cinkanega jekla. Izberete polnilo, višino in barvo, mi pa poskrbimo, da ograja ustreza tudi varnostnim zahtevam.',
+      'Ograje za balkone in terase iz aluminija ali barvanega inoxa. Izberete polnilo, razmik letvic, višino in barvo, mi pa poskrbimo, da ograja ustreza tudi varnostnim zahtevam.',
     podatki: [
-      ['Polnila', 'palice, letvice, steklo, žarki, pločevina'],
+      ['Polnila', 'palice, navpične ali vodoravne letvice, žarki'],
       ['Montaža', 'z vrha ali s strani plošče'],
       ['Višina', 'običajno 100 do 110 cm'],
     ],
     href: '/ograje',
     galerija: 'zunanje-balkonske-ograje',
-    slike: [izGalerije('zunanje-balkonske-ograje', 23), izGalerije('zunanje-balkonske-ograje', 71), izGalerije('zunanje-balkonske-ograje', 59)],
-    alt: ['Balkonska ograja z vodoravnimi letvicami v antracitni barvi', 'Balkonska ograja s konzolnim nosilcem na moderni hiši', 'Balkonska ograja iz perforirane pločevine'],
+    slike: [izGalerije('zunanje-balkonske-ograje', 23), izGalerije('zunanje-balkonske-ograje', 71), izGalerije('zunanje-balkonske-ograje', 12)],
+    alt: ['Balkonska ograja z vodoravnimi letvicami v antracitni barvi', 'Balkonska ograja s konzolnim nosilcem na moderni hiši', 'Balkonska ograja z navpičnimi letvicami'],
   },
   {
     crka: 'B',
@@ -33,7 +33,7 @@ const detajli = [
     besedilo:
       'Nadstreški za avtomobile, vhode, terase in balkone. Ob hiši ali samostojni, z jekleno ali aluminijasto konstrukcijo in kritino, ki jo izberete glede na svetlobo in sneg.',
     podatki: [
-      ['Kritine', 'kaljeno steklo, polikarbonat, trapezna pločevina, folija'],
+      ['Kritine', 'kaljeno steklo, polikarbonat, sendvič panel, folija Sikaplan'],
       ['Postavitev', 'ob objektu ali samostojen'],
       ['Zaščita', 'vroče cinkanje in prašno barvanje'],
     ],
@@ -81,7 +81,7 @@ const trak = [
   { pot: izGalerije('zunanje-dvoriscne-ograje', 29), alt: 'Dvoriščna ograja z vodoravnimi letvami' },
   { pot: izGalerije('stopnisca', 8), alt: 'Kovinsko stopnišče' },
   { pot: izGalerije('ostalo', 21), alt: 'Kovinska konstrukcija' },
-  { pot: izGalerije('zunanje-balkonske-ograje', 59), alt: 'Balkonska ograja iz perforirane pločevine' },
+  { pot: izGalerije('zunanje-balkonske-ograje', 23), alt: 'Balkonska ograja z vodoravnimi letvicami' },
   { pot: izGalerije('holler-diy', 2), alt: 'Holler DIY drsna vrata z osebnim prehodom' },
   { pot: izGalerije('nadstreski', 60), alt: 'Nadstrešek za avto' },
   { pot: izGalerije('stopnisca', 6), alt: 'Zunanje stopnišče ob hiši' },

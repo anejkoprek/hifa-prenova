@@ -332,6 +332,6 @@ export function risiProcelje(iz: ProceljeIzbira): string {
 export const privzetaIzbira: ProceljeIzbira = {
   A: { polnilo: 'vertikalne', ral: '#383e42' },
   B: { oblika: 'box', ral: '#383e42' },
-  C: { polnilo: 'steklo', ral: '#383e42' },
+  C: { polnilo: 'palicna', ral: '#383e42' },
   D: { polnilo: 'horizontalne', vrata: 'drsna', ral: '#383e42' },
 };

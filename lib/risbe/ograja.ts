@@ -19,6 +19,18 @@ export interface OgrajaOpts {
   sirinaVrat?: number;
   osebniPrehod?: boolean;
   pogon?: boolean;
+  /** razmik nosilnih stebrov, m */
+  razmikStebrov?: number;
+  /** svetli razmik med letvicami / palicami, cm */
+  razmikPolnila?: number;
+  /** palice: ročaj zgoraj ali odprte palice z vodoravno šipko */
+  zakljucek?: 'rocaj' | 'odprto';
+  /** višina vodoravne šipke od tal, cm */
+  sipka?: number;
+  /** montaža s strani: polja na nosilni plošči brez stebričkov */
+  brezStebrickov?: boolean;
+  /** montaža s strani: ograja sega pod nivo tal, cm */
+  podaljsek?: number;
   w?: number;
   h?: number;
   id?: string;
@@ -38,7 +50,13 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const r = stopnice ? 0.6 : 0;
   const stopOff = stopnice ? 0.168 : 0;
   const visina = Math.min(Math.max(o.visina, 60), 220) / 100;
-  const clearance = dvorisce ? 0.05 : 0.06;
+  const stran = o.tip === 'balkonska' && o.montaza === 'stran';
+  const podaljsek = stran ? Math.min(Math.max(o.podaljsek ?? 0, 0), 40) / 100 : 0;
+  // s strani: spodnji rob poravnan s tlemi (0) ali nižje čez čelo plošče
+  const clearance = stran ? -podaljsek : dvorisce ? 0.05 : 0.06;
+  const odprte = o.polnilo === 'palicna' && o.zakljucek === 'odprto';
+  const brezStebrov = stran && !!o.brezStebrickov;
+  const razmik = (privzeto: number) => (o.razmikPolnila && o.razmikPolnila > 0 ? o.razmikPolnila / 100 : privzeto);
   const hm = visina - clearance;
   const vrata = dvorisce ? o.vrata ?? 'brez' : 'brez';
   const gate = vrata !== 'brez' ? Math.min(Math.max(o.sirinaVrat ?? 4, 1), 8) : 0;
@@ -126,18 +144,18 @@ export function risiOgrajo(o: OgrajaOpts): string {
     switch (o.polnilo) {
       case 'palicna': {
         const bw = Math.max(2, 0.03 * s);
-        for (let x = xa + 0.06; x < xb - 0.02; x += 0.12) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.6"/>`);
+        for (let x = xa + 0.06; x < xb - 0.02; x += 0.03 + razmik(0.09)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.6"/>`);
         break;
       }
       case 'vertikalne': {
         const bw = Math.max(1.6, 0.03 * s);
-        for (let x = xa + 0.04; x < xb - 0.02; x += 0.065) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.5"/>`);
+        for (let x = xa + 0.04; x < xb - 0.02; x += 0.03 + razmik(0.025)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.5"/>`);
         okvir = true;
         break;
       }
       case 'horizontalne': {
         const sw = Math.max(2, 0.05 * s);
-        for (let d = 0.035; d < hm + 0.1; d += 0.078) {
+        for (let d = 0.035; d < hm + 0.1; d += 0.05 + razmik(0.015)) {
           const y1 = bottomFn(xa) - d * s, y2 = y1 + slope * (xb - xa);
           g.push(`<line x1="${n(X(xa) - 2)}" y1="${n(y1)}" x2="${n(X(xb) + 2)}" y2="${n(y2)}" stroke="${barva}" stroke-width="${n(sw)}"/>`);
           g.push(`<line x1="${n(X(xa) - 2)}" y1="${n(y1 - sw / 2)}" x2="${n(X(xb) + 2)}" y2="${n(y2 - sw / 2)}" stroke="${edge}" stroke-width="0.6"/>`);
@@ -149,7 +167,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
         const hgt = maxY - minY;
         const dx = hgt / 1.7;
         const sw = Math.max(1.4, 0.012 * s);
-        const step = 0.2 * s;
+        const step = razmik(0.13) * 1.55 * s;
         for (let t = minX - dx; t < maxX + dx; t += step) {
           g.push(`<line x1="${n(t)}" y1="${n(maxY)}" x2="${n(t + dx)}" y2="${n(minY)}" stroke="${barva}" stroke-width="${n(sw)}"/>`);
           g.push(`<line x1="${n(t)}" y1="${n(minY)}" x2="${n(t + dx)}" y2="${n(maxY)}" stroke="${barva}" stroke-width="${n(sw)}"/>`);
@@ -181,7 +199,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
 
   // ---------- ograja ----------
   const balkonSlog = !dvorisce;
-  const maxSpan = dvorisce ? 2.0 : 1.3;
+  const maxSpan = o.razmikStebrov && o.razmikStebrov > 0 ? o.razmikStebrov : dvorisce ? 2.0 : 1.3;
   const spans = Math.max(1, Math.ceil(Ls / maxSpan));
   const pw = dvorisce ? 0.08 : 0.05;
   const posts = Array.from({ length: spans + 1 }, (_, i) => (i * Ls) / spans);
@@ -207,18 +225,32 @@ export function risiOgrajo(o: OgrajaOpts): string {
   };
   if (o.polnilo !== 'steklo') rail((x) => Yb(x) - 0.04 * s, 0.04);
   else rail((x) => Yb(x) - 0.03 * s, 0.03);
-  if (balkonSlog) {
+  if (odprte) {
+    // odprte palice: brez ročaja, palice povezuje vodoravna šipka
+    const hs = Math.min(Math.max((o.sipka ?? visina * 50) / 100, 0.1), visina / 2);
+    rail((x) => Fy - (stopOff + Math.min(x, Ls) * r + hs) * s - 0.0125 * s, 0.025);
+  } else if (balkonSlog) {
     // ročaj nekoliko nad polnilom
     rail((x) => Yt(x) - 0.012 * s, 0.05);
   } else {
     rail((x) => Yt(x), 0.035);
   }
 
+  // nosilna plošča na čelu balkona (montaža s strani), v barvi ograje
+  if (stran) {
+    parts.push(`<rect x="${n(X(-0.05))}" y="${n(Fy + 0.015 * s)}" width="${n((Ls + 0.1) * s)}" height="${n(0.19 * s)}" fill="${barva}" stroke="${edge}" stroke-width="0.8" style="filter:brightness(0.92)"/>`);
+  }
+
+  // brez stebričkov: samo končna profila polja, pritrjena na ploščo
+  if (brezStebrov) {
+    for (const x of [0, Ls]) parts.push(`<rect x="${n(X(x) - 0.015 * s)}" y="${n(Yt(x) - 0.012 * s)}" width="${n(0.03 * s)}" height="${n(Yb(x) - Yt(x) + 0.012 * s)}" fill="${barva}" stroke="${edge}" stroke-width="0.7"/>`);
+  }
+
   // stebri
-  for (const x of posts) {
+  for (const x of brezStebrov ? [] : posts) {
     const top = balkonSlog ? Yt(x) - 0.012 * s : Yt(x) - 0.01 * s;
     let bottom = stopnice ? Yb(x) + clearance * s : Fy;
-    if (o.tip === 'balkonska' && o.montaza === 'stran') bottom = Fy + 0.16 * s;
+    if (stran) bottom = Math.max(Fy + 0.17 * s, Yb(x) + 0.02 * s);
     const px = X(x) - (pw * s) / 2;
     parts.push(`<rect x="${n(px)}" y="${n(top)}" width="${n(pw * s)}" height="${n(bottom - top)}" fill="${barva}" stroke="${edge}" stroke-width="0.8"/>`);
     if (o.tip === 'balkonska' && o.montaza === 'stran') {
@@ -267,7 +299,9 @@ export function risiOgrajo(o: OgrajaOpts): string {
       parts.push(`<path d="M ${n(ax1)} ${n(arrowY)} L ${n(ax2)} ${n(arrowY)} M ${n(ax2 + 10)} ${n(arrowY - 7)} L ${n(ax2)} ${n(arrowY)} L ${n(ax2 + 10)} ${n(arrowY + 7)}" fill="none" stroke="var(--draw-ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`);
     }
     if (vrata === 'drsna') {
-      parts.push(`<line x1="${n(X(a - gate * 0.9))}" y1="${n(Fy - 1)}" x2="${n(X(b))}" y2="${n(Fy - 1)}" stroke="var(--draw-ink)" stroke-width="2.4"/>`);
+      // tirnica, vgrajena v tla, in kolesca krila
+      parts.push(`<line x1="${n(X(a - gate * 0.9))}" y1="${n(Fy + 1)}" x2="${n(X(b))}" y2="${n(Fy + 1)}" stroke="var(--draw-ink)" stroke-width="2.4"/>`);
+      for (const x of [a + 0.35, b - 0.35]) parts.push(`<circle cx="${n(X(x))}" cy="${n(Fy - 0.035 * s)}" r="${n(Math.max(4, 0.035 * s))}" fill="var(--draw-ink)"/><circle cx="${n(X(x))}" cy="${n(Fy - 0.035 * s)}" r="${n(Math.max(1.5, 0.012 * s))}" fill="var(--draw-bg)"/>`);
     }
     if (vrata === 'samonosna') {
       const tail = gate * 0.4;

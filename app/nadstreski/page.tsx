@@ -25,7 +25,7 @@ export default function Nadstreski() {
           naslov: 'Material in barva',
           odstavki: [
             'Nadstreške najpogosteje izdelamo iz nerjavnega jekla, aluminija ali črnega jekla, ki ga zaščitimo z vročim cinkanjem, prašnim barvanjem v poljubni RAL barvi ali obojim.',
-            'Kovino lahko kombiniramo z naravnimi ali umetnimi materiali, ki imajo funkcijski ali estetski namen, na primer z lesom na stropu ali steklenimi stranicami.',
+            'Kovino lahko kombiniramo z naravnimi ali umetnimi materiali, ki imajo funkcijski ali estetski namen, na primer z lesom na stropu. Stranske stene izdelamo iz fiksnih ali mehanskih lamel.',
           ],
           legenda: [
             ['Oblike', 'box (ravna streha), enokapnica'],
@@ -41,8 +41,8 @@ export default function Nadstreski() {
           legenda: [
             ['Kaljeno steklo', 'največ svetlobe, eleganten videz'],
             ['Polikarbonat', 'lahek in cenovno ugoden'],
-            ['Trapezna pločevina', 'z izolacijo, brez kapljanja'],
-            ['Folija za ravne strehe', 'za nadstreške z ravno streho'],
+            ['Sendvič panel', 'izoliran, brez kapljanja; pri enokapnicah'],
+            ['Folija Sikaplan', 'vodotesna membrana za box z ravno streho'],
           ],
         },
         {

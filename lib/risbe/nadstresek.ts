@@ -15,6 +15,8 @@ export interface NadstresekOpts {
   barva: string;
   stranLevo?: boolean;
   stranDesno?: boolean;
+  stenaTip?: 'lamele' | 'mehanske';
+  stenaSmer?: 'vertikalne' | 'horizontalne';
   w?: number;
   h?: number;
   id?: string;
@@ -82,8 +84,8 @@ export function risiNadstresek(o: NadstresekOpts): string {
     if (Wm > 3.2) out.push(`<polygon points="${pts([[0.6, Dm, 0.95], [1.9, Dm, 0.95], [1.9, Dm, 2.2], [0.6, Dm, 2.2]])}" fill="var(--draw-glass)" stroke="var(--draw-line)" stroke-width="1"/>`);
   }
 
-  // stebri
-  const nSpans = Math.max(1, Math.ceil(Wm / 3.6));
+  // stebri: od širine 6 m dalje vmesni steber na sredini
+  const nSpans = Wm >= 6 ? 2 : 1;
   const xs = Array.from({ length: nSpans + 1 }, (_, i) => (i * Wm) / nSpans);
   const pw = 0.11;
   const steber = (x: number, y: number) => {
@@ -93,11 +95,39 @@ export function risiNadstresek(o: NadstresekOpts): string {
   };
   if (!ob) xs.forEach((x) => steber(x, Dm - pw));
 
-  // stranske stene (steklo)
+  // stranske stene: lamele v okvirju, prekati po 1,5 m
   const stena = (x: number) => {
     const zTopF = hp, zTopB = hp + (o.tip === 'enokapnica' ? rise : 0);
-    out.push(`<polygon points="${pts([[x, 0.05, 0.12], [x, Dm - 0.05, 0.12], [x, Dm - 0.05, zTopB], [x, 0.05, zTopF]])}" fill="var(--draw-glass)" stroke="${barva}" stroke-width="2"/>`);
-    out.push(line([x, Dm * 0.3, 0.6], [x, Dm * 0.55, hp * 0.8], 'stroke="var(--draw-glare)" stroke-width="2" stroke-linecap="round"'));
+    const zTop = (y: number) => zTopF + ((zTopB - zTopF) * y) / Dm;
+    const z0 = 0.06;
+    const y0 = 0.05, y1 = Dm - 0.05;
+    const meh = o.stenaTip === 'mehanske';
+    const sid = `${uid}-st-${Math.round(x * 100)}`;
+    const obris: P3[] = [[x, y0, z0], [x, y1, z0], [x, y1, zTop(y1)], [x, y0, zTop(y0)]];
+    defs.push(`<clipPath id="${sid}"><polygon points="${pts(obris)}"/></clipPath>`);
+    const lam: string[] = [];
+    lam.push(`<polygon points="${pts(obris)}" fill="var(--draw-bg)" opacity="0.55"/>`);
+    if (o.stenaSmer === 'horizontalne') {
+      const korak = meh ? 0.11 : 0.085;
+      for (let z = z0 + 0.03; z < zTopB; z += korak) {
+        lam.push(line([x, y0, z], [x, y1, z], `stroke="${barva}" stroke-width="${n(Math.max(2, (meh ? 0.05 : 0.04) * s))}"`));
+        if (meh) lam.push(line([x, y0, z + 0.025], [x, y1, z + 0.025], 'stroke="var(--draw-glare)" stroke-width="1" opacity="0.8"'));
+      }
+    } else {
+      const korak = meh ? 0.12 : 0.09;
+      for (let y = y0 + 0.04; y < y1; y += korak) {
+        lam.push(line([x, y, z0], [x, y, zTop(y)], `stroke="${barva}" stroke-width="${n(Math.max(2, (meh ? 0.05 : 0.035) * s))}"`));
+        if (meh) lam.push(line([x, y + 0.03, z0], [x, y + 0.03, zTop(y)], 'stroke="var(--draw-glare)" stroke-width="1" opacity="0.8"'));
+      }
+    }
+    out.push(`<g clip-path="url(#${sid})">${lam.join('')}</g>`);
+    // okvir in prekati po 1,5 m
+    const nP = Math.max(1, Math.ceil((y1 - y0) / 1.5));
+    for (let i = 0; i <= nP; i++) {
+      const y = y0 + ((y1 - y0) * i) / nP;
+      out.push(line([x, y, z0], [x, y, zTop(y)], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.06 * s))}" style="filter:brightness(0.85)"`));
+    }
+    out.push(line([x, y0, z0], [x, y1, z0], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.05 * s))}" style="filter:brightness(0.85)"`));
   };
   if (o.stranLevo) stena(0.02);
 
@@ -148,14 +178,27 @@ export function risiNadstresek(o: NadstresekOpts): string {
   out.push(`<polygon points="${pts([[Wm, 0, hp], [Wm, Dm, hp + rise], [Wm, Dm, zB], [Wm, 0, zF]])}" fill="${barva}" ${edge} style="filter:brightness(0.82)"/>`);
   out.push(`<polygon points="${pts([[0, 0, hp], [Wm, 0, hp], [Wm, 0, zF], [0, 0, zF]])}" fill="${barva}" ${edge}/>`);
   if (o.tip === 'enokapnica') {
-    // žleb spredaj
-    out.push(`<polygon points="${pts([[-0.04, -0.08, hp - 0.02], [Wm + 0.04, -0.08, hp - 0.02], [Wm + 0.04, -0.08, hp + 0.08], [-0.04, -0.08, hp + 0.08]])}" fill="${barva}" ${edge} style="filter:brightness(1.15)"/>`);
+    // viden žleb spredaj
+    out.push(`<polygon points="${pts([[-0.1, -0.16, hp - 0.06], [Wm + 0.36, -0.16, hp - 0.06], [Wm + 0.36, -0.16, hp + 0.1], [-0.1, -0.16, hp + 0.1]])}" fill="${barva}" ${edge} style="filter:brightness(1.4)"/>`);
+    out.push(line([-0.1, -0.16, hp + 0.1], [Wm + 0.36, -0.16, hp + 0.1], 'stroke="var(--draw-glare)" stroke-width="1.4"'));
   }
 
   if (o.stranDesno) stena(Wm - 0.02);
 
   // sprednji stebri
   xs.forEach((x) => steber(x, 0));
+  if (o.tip === 'enokapnica') {
+    // odtočna cev ob desnem sprednjem stebru
+    const cx = Wm + 0.3;
+    out.push(line([cx, -0.16, hp - 0.06], [cx, -0.16, 0.18], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.07 * s))}" stroke-linecap="round" style="filter:brightness(1.4)"`));
+    out.push(line([cx, -0.16, 0.18], [cx, -0.36, 0.06], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.07 * s))}" stroke-linecap="round" style="filter:brightness(1.4)"`));
+  } else {
+    // box: odtok skozi steber, spodaj kratka cevka
+    for (const x of [xs[0], xs[xs.length - 1]]) {
+      const xc = Math.min(Math.max(x, pw / 2), Wm - pw / 2);
+      out.push(line([xc, 0, 0.16], [xc, -0.16, 0.16], `stroke="${barva}" stroke-width="${n(Math.max(2.5, 0.045 * s))}" stroke-linecap="round" style="filter:brightness(1.15)"`));
+    }
+  }
 
   // ---- kote ----
   if (!o.brezKot) {
