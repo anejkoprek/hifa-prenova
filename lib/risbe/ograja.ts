@@ -10,6 +10,8 @@ export interface OgrajaOpts {
   tip: TipOgraje;
   polnilo: Polnilo;
   dolzina: number;
+  /** vodoravni del na podestu (stopnišča), m */
+  podest?: number;
   visina: number; // cm, od tal do vrha
   barva: string;
   montaza: Montaza;
@@ -42,13 +44,16 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const gate = vrata !== 'brez' ? Math.min(Math.max(o.sirinaVrat ?? 4, 1), 8) : 0;
   const prehod = dvorisce && o.osebniPrehod ? 1.0 : 0;
   const gap = 0.14;
-  const maxPrikaz = stopnice ? 5 : dvorisce ? Math.max(3, 12 - gate - prehod) : 10;
+  const maxPrikaz = stopnice ? 12 : dvorisce ? Math.max(3, 12 - gate - prehod) : 10;
   const dolzina = Math.max(o.dolzina, 0.5);
   const Ls = Math.min(dolzina, maxPrikaz);
-  const prekinjeno = dolzina > maxPrikaz + 0.001;
+  // stopnišča: poševni del se ob dolgih stopnicah ne prekine, kota pove pravo mero
+  const prekinjeno = !stopnice && dolzina > maxPrikaz + 0.001;
+  const podestPravi = stopnice ? Math.max(0, o.podest ?? 0) : 0;
+  const P = Math.min(podestPravi, 4);
   const xPrehod = Ls + gap;
   const xVrata = Ls + gap + (prehod ? prehod + gap : 0);
-  const skupaj = Ls + (prehod ? prehod + gap : 0) + (gate ? gate + gap : 0);
+  const skupaj = Ls + P + (prehod ? prehod + gap : 0) + (gate ? gate + gap : 0);
 
   // podlaga pod ograjo
   const D = o.tip === 'balkonska' ? 0.22 : o.montaza === 'podzidek' ? 0.3 : 0.12;
@@ -63,7 +68,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const Fy = H - mB - D * s;
 
   const X = (x: number) => ox + x * s;
-  const Yb = (x: number) => Fy - (stopOff + clearance + x * r) * s; // spodnji rob ograje
+  const Yb = (x: number) => Fy - (stopOff + clearance + Math.min(x, Ls) * r) * s; // spodnji rob ograje (na podestu vodoraven)
   const Yt = (x: number) => Yb(x) - hm * s; // vrh ograje
 
   const barva = o.barva;
@@ -93,7 +98,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
     for (let i = 0; i < steps; i++) {
       d += ` L ${n(X(i * tread))} ${n(Fy - (i + 1) * rise * s)} L ${n(X((i + 1) * tread))} ${n(Fy - (i + 1) * rise * s)}`;
     }
-    const topX = steps * tread + 0.45;
+    const topX = Math.max(steps * tread + 0.45, Ls + P + 0.25);
     d += ` L ${n(X(topX))} ${n(Fy - steps * rise * s)} L ${n(X(topX))} ${n(Fy)} Z`;
     parts.push(`<path d="${d}" fill="${o.tip === 'stopniscna-notranja' ? 'var(--draw-wood)' : 'var(--draw-concrete)'}" stroke="var(--draw-line)" stroke-width="1"/>`);
     parts.push(`<line x1="${n(X(-0.45))}" y1="${n(Fy)}" x2="${n(X(topX))}" y2="${n(Fy)}" stroke="var(--draw-line)" stroke-width="2"/>`);
@@ -181,6 +186,10 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const pw = dvorisce ? 0.08 : 0.05;
   const posts = Array.from({ length: spans + 1 }, (_, i) => (i * Ls) / spans);
   if (prekinjeno) posts.pop();
+  if (P > 0.05) {
+    const sp = Math.max(1, Math.ceil(P / maxSpan));
+    for (let i = 1; i <= sp; i++) posts.push(Ls + (i * P) / sp);
+  }
 
   // polnila med stebri
   const meje = prekinjeno ? [...posts, Ls] : posts;
@@ -190,9 +199,11 @@ export function risiOgrajo(o: OgrajaOpts): string {
 
   // spodnji in zgornji profil
   const rail = (yFn: (x: number) => number, debelina: number, cls = '') => {
-    const x1 = 0, x2 = Ls;
-    const pts: [number, number][] = [[X(x1), yFn(x1)], [X(x2), yFn(x2)], [X(x2), yFn(x2) + debelina * s], [X(x1), yFn(x1) + debelina * s]];
-    parts.push(`<polygon class="${cls}" points="${poly(pts)}" fill="${barva}" stroke="${edge}" stroke-width="0.7"/>`);
+    const odseki: [number, number][] = P > 0.05 ? [[0, Ls], [Ls, Ls + P]] : [[0, Ls]];
+    for (const [x1, x2] of odseki) {
+      const pts: [number, number][] = [[X(x1), yFn(x1)], [X(x2), yFn(x2)], [X(x2), yFn(x2) + debelina * s], [X(x1), yFn(x1) + debelina * s]];
+      parts.push(`<polygon class="${cls}" points="${poly(pts)}" fill="${barva}" stroke="${edge}" stroke-width="0.7"/>`);
+    }
   };
   if (o.polnilo !== 'steklo') rail((x) => Yb(x) - 0.04 * s, 0.04);
   else rail((x) => Yb(x) - 0.03 * s, 0.03);
@@ -279,6 +290,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
       parts.push(`<g class="kota"><line x1="${n(a)}" y1="${n(dimY)}" x2="${n(b)}" y2="${n(dimY)}"/><line x1="${n(a)}" y1="${n(dimY - 9)}" x2="${n(a)}" y2="${n(dimY + 9)}"/><line x1="${n(b)}" y1="${n(dimY - 9)}" x2="${n(b)}" y2="${n(dimY + 9)}"/><text x="${n((a + b) / 2)}" y="${n(dimY - 12)}" text-anchor="middle" font-size="${n(fs)}">${label}</text></g>`);
     };
     kota(0, Ls, fmtM(dolzina));
+    if (P > 0.05) kota(Ls, Ls + P, fmtM(podestPravi));
     if (prehod) kota(xPrehod, xPrehod + prehod, fmtM(prehod));
     if (gate) kota(xVrata, xVrata + gate, fmtM(gate));
 

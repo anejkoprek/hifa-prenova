@@ -1,3 +1,4 @@
+.mreza > * { min-width: 0; } /* široka tabela se drsi znotraj sebe, ne raztegne strani */
 .mreza { display: grid; gap: 2rem; padding-bottom: var(--sekcija); color: var(--crnilo-2); }
 .mreza :global(.prose) a, .mreza :global(.prose) button { color: var(--zelena-temna); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .mreza :global(.prose) h2 { color: var(--crnilo); scroll-margin-top: calc(var(--glava) + 20px); }

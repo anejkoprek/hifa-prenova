@@ -26,6 +26,9 @@ import {
   vrataMoznosti,
   visinaZaTip,
   dolzinaZaTip,
+  jeStopnisce,
+  podestRazpon,
+  skupnaDolzina,
   type NadstresekStanje,
   type OgrajaStanje,
 } from '@/lib/konfigurator';
@@ -313,6 +316,7 @@ export default function Konfigurator() {
         tip: og.tip,
         polnilo: og.polnilo,
         dolzina: og.dolzina,
+        podest: jeStopnisce(og.tip) ? og.podest : 0,
         visina: og.visina,
         barva: ralHex(og.ral),
         montaza: montazeZaTip[og.tip].length ? og.montaza : 'vrh',
@@ -346,7 +350,7 @@ export default function Konfigurator() {
     izdelek === 'ograja'
       ? [
           ['Polnilo', polnilaNazivi[og.polnilo]],
-          ['Mere', `${m(og.dolzina)} m × ${og.visina} cm`],
+          ['Mere', jeStopnisce(og.tip) ? `${m(og.dolzina)} + ${m(og.podest)} = ${m(skupnaDolzina(og))} m × ${og.visina} cm` : `${m(og.dolzina)} m × ${og.visina} cm`],
           ['Material', naziv(materiali, og.material)],
           ...(montazeZaTip[og.tip].length ? ([['Montaža', naziv(montazeZaTip[og.tip], og.montaza)]] as [string, string][]) : []),
           ...(og.tip === 'dvoriscna'
@@ -477,7 +481,33 @@ export default function Konfigurator() {
               </Korak>
 
               <Korak st={++st} naslov="Mere" namig="Približne mere so dovolj. Natančno izmerimo na objektu.">
-                <Mera oznaka="Dolžina ograje" vrednost={og.dolzina} nastavi={(v) => posodobiOg('dolzina', v)} min={dolzinaZaTip[og.tip].min} max={dolzinaZaTip[og.tip].max} korak={0.1} gumb={0.5} enota="m" />
+                <Mera
+                  oznaka={jeStopnisce(og.tip) ? 'Dolžina ob stopnicah' : 'Dolžina ograje'}
+                  vrednost={og.dolzina}
+                  nastavi={(v) => posodobiOg('dolzina', v)}
+                  min={dolzinaZaTip[og.tip].min}
+                  max={dolzinaZaTip[og.tip].max}
+                  korak={0.1}
+                  gumb={0.5}
+                  enota="m"
+                />
+                {jeStopnisce(og.tip) && (
+                  <Mera
+                    oznaka={og.tip === 'stopniscna-notranja' ? 'Dolžina ob zgornji etaži' : 'Dolžina na podestu'}
+                    vrednost={og.podest}
+                    nastavi={(v) => posodobiOg('podest', v)}
+                    min={podestRazpon.min}
+                    max={podestRazpon.max}
+                    korak={0.1}
+                    gumb={0.5}
+                    enota="m"
+                  />
+                )}
+                {jeStopnisce(og.tip) && (
+                  <p className={`small ${s.skupaj}`}>
+                    Skupaj <strong>{m(skupnaDolzina(og))} m</strong> ograje
+                  </p>
+                )}
                 <Mera
                   oznaka="Višina ograje"
                   vrednost={og.visina}

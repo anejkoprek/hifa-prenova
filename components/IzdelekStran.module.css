@@ -7,7 +7,8 @@
 }
 .glavaBesedilo { display: grid; gap: 1.2rem; }
 .drobtine { color: var(--jeklo); display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.drobtine a { text-decoration: none; }
+.drobtine { align-items: center; }
+.drobtine a { text-decoration: none; display: inline-flex; align-items: center; min-height: 32px; padding-inline: 0.2rem; margin-inline: -0.2rem; }
 .drobtine a:hover { color: var(--crnilo); }
 .naslov { display: flex; align-items: flex-start; gap: 0.9rem; max-width: 16ch; }
 .naslov :global(.detajl) { --d: clamp(40px, 30px + 1.8vw, 58px); margin-top: 0.12em; }

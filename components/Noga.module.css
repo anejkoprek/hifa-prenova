@@ -39,8 +39,8 @@
 .blok address { font-style: normal; color: var(--na-antracitu-2); line-height: 1.65; }
 .cas { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.8rem; color: var(--na-antracitu-2); font-size: var(--step--1); }
 .zemljevid {
-  display: inline-block; margin-top: 0.8rem; font-weight: 600; font-size: var(--step--1);
-  border-bottom: 1.5px solid var(--zelena); padding-bottom: 1px;
+  display: inline-block; margin-top: 0.2rem; padding-block: 0.65rem; font-weight: 600; font-size: var(--step--1);
+  text-decoration: underline 1.5px var(--zelena); text-underline-offset: 4px;
 }
 @media (hover: hover) and (pointer: fine) {
   .blok li a:hover, .kontakti a:hover { color: #fff; }

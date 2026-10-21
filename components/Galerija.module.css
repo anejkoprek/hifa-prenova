@@ -19,7 +19,8 @@
 }
 .plosca { aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--papir-2); }
 .plosca[data-velika] { grid-column: span 2; grid-row: span 2; }
-.plosca[data-pokoncna] { grid-row: span 2; aspect-ratio: auto; }
+/* dve vrsti po 4:3 = 2:3; brez fiksnega razmerja se dve pokončni sosedi sesujeta v ničelno višino */
+.plosca[data-pokoncna] { grid-row: span 2; aspect-ratio: 2 / 3; }
 /* nove fotografije ob »Pokaži več« se pokažejo postopoma */
 @media (prefers-reduced-motion: no-preference) {
   .plosca { animation: pojav 420ms var(--ease-out) both; animation-delay: var(--z, 0ms); }

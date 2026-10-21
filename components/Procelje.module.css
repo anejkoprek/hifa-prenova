@@ -1,4 +1,5 @@
-.hero { padding-top: clamp(1rem, 0.5rem + 1.5vw, 2rem); }
+/* overflow-x: clip: utripajoči obroč oznake ob robu risbe na telefonu ne sme razširiti strani (clip ne pokvari sticky) */
+.hero { padding-top: clamp(1rem, 0.5rem + 1.5vw, 2rem); overflow-x: clip; }
 
 .list {
   max-width: 1480px;

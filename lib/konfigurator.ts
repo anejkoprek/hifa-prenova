@@ -9,7 +9,8 @@ export type Material = 'aluminij' | 'inox' | 'jeklo';
 export type OgrajaStanje = {
   tip: TipOgraje;
   polnilo: Polnilo;
-  dolzina: number; // m
+  dolzina: number; // m (pri stopniščih: dolžina ob stopnicah)
+  podest: number; // m, vodoravni del ograje na podestu (samo stopnišča)
   visina: number; // cm
   montaza: Montaza;
   material: Material;
@@ -58,9 +59,15 @@ export const visinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto
 export const dolzinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto: number }> = {
   balkonska: { min: 1, max: 30, privzeto: 8 },
   dvoriscna: { min: 2, max: 80, privzeto: 15 },
-  'stopniscna-zunanja': { min: 1.5, max: 15, privzeto: 5 },
-  'stopniscna-notranja': { min: 1.5, max: 15, privzeto: 5 },
+  'stopniscna-zunanja': { min: 1, max: 12, privzeto: 3.5 },
+  'stopniscna-notranja': { min: 1, max: 12, privzeto: 4 },
 };
+
+export const jeStopnisce = (t: TipOgraje) => t === 'stopniscna-zunanja' || t === 'stopniscna-notranja';
+/** vodoravni del ograje na podestu oz. ob zgornji etaži */
+export const podestRazpon = { min: 0, max: 10, privzeto: 1.5 };
+/** skupna dolžina ograje za ponudbo */
+export const skupnaDolzina = (o: OgrajaStanje) => o.dolzina + (jeStopnisce(o.tip) ? o.podest : 0);
 
 export const montazeZaTip: Record<TipOgraje, { id: Montaza; naziv: string; opis: string }[]> = {
   balkonska: [
@@ -109,6 +116,7 @@ export const privzetaOgraja: OgrajaStanje = {
   tip: 'balkonska',
   polnilo: 'vertikalne',
   dolzina: 8,
+  podest: 1.5,
   visina: 110,
   montaza: 'vrh',
   material: 'aluminij',
@@ -148,6 +156,7 @@ export function ograjaIzUrl(q: URLSearchParams): OgrajaStanje {
     tip,
     polnilo: izbira(q.get('polnilo'), polnilaZaTip[tip], polnilaZaTip[tip][0]),
     dolzina: omeji(stevilo(q, 'dolzina', dolzinaZaTip[tip].privzeto), dolzinaZaTip[tip].min, dolzinaZaTip[tip].max),
+    podest: omeji(stevilo(q, 'podest', podestRazpon.privzeto), podestRazpon.min, podestRazpon.max),
     visina: omeji(stevilo(q, 'visina', v.privzeto), v.min, v.max),
     montaza: montaze.length ? izbira(q.get('montaza'), montaze, montaze[0]) : 'vrh',
     material: izbira(q.get('material'), materiali.map((m) => m.id), 'aluminij'),
@@ -185,6 +194,7 @@ export function ograjaVUrl(o: OgrajaStanje): string {
     ral: o.ral,
   });
   if (montazeZaTip[o.tip].length) q.set('montaza', o.montaza);
+  if (jeStopnisce(o.tip)) q.set('podest', String(o.podest));
   if (o.tip === 'dvoriscna') {
     q.set('vrata', o.vrata);
     if (o.vrata !== 'brez') {
@@ -224,7 +234,9 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
   const vrstice = [
     naziv(tipiOgraj, o.tip),
     `Polnilo: ${polnilaNazivi[o.polnilo].toLowerCase()}`,
-    `Dolžina ${m(o.dolzina)}, višina ${o.visina} cm`,
+    jeStopnisce(o.tip)
+      ? `Dolžina ${m(skupnaDolzina(o))} (${m(o.dolzina)} ob stopnicah + ${m(o.podest)} na podestu), višina ${o.visina} cm`
+      : `Dolžina ${m(o.dolzina)}, višina ${o.visina} cm`,
     `Material: ${naziv(materiali, o.material).toLowerCase()}, ${ralTekst(o.ral)}`,
   ];
   if (montazeZaTip[o.tip].length) vrstice.push(`Montaža: ${naziv(montazeZaTip[o.tip], o.montaza).toLowerCase()}`);

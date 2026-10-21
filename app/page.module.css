@@ -1,7 +1,7 @@
 /* ---------- dejstva ---------- */
 .dejstva { border-bottom: 1px solid var(--crta); }
 .dejstvaMreza {
-  margin: 0;
+  margin-block: 0; /* margin-inline ostane od .wrap (sredinska poravnava) */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding-block: clamp(1.8rem, 1.2rem + 2vw, 3rem);

@@ -268,3 +268,6 @@
 .barve :global(.vzorci) { flex-wrap: nowrap; gap: 6px; }
 .barve :global(.vzorec) { width: 36px; height: 36px; flex: none; }
 @media (max-width: 360px) { .barve :global(.vzorec) { width: 32px; height: 32px; } }
+
+.skupaj { margin-top: -0.4rem; color: var(--jeklo); font-variant-numeric: tabular-nums; }
+.skupaj strong { color: var(--crnilo); font-weight: 680; }

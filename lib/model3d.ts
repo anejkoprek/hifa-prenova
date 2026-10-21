@@ -465,15 +465,15 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
 
   if (o.tip === 'stopniscna-zunanja') {
     // betonske stopnice do vhodnega podesta ob fasadi, ograja ob stopnicah in podestu
-    // dolžina ograje = poševni del ob stopnicah + podest; daljša ograja pomeni več stopnic
+    // dolžina ob stopnicah določa število stopnic, podest je ločena mera (vodoravni del ograje)
     const nastop = 0.17, globinaStopnice = 0.3;
     const naStopnico = Math.hypot(globinaStopnice, nastop);
-    const zelenPodest = Math.min(Math.max(o.dolzina * 0.3, 1), 4);
-    const n = Math.max(2, Math.round((o.dolzina - zelenPodest) / naStopnico));
+    const n = Math.max(2, Math.round(o.dolzina / naStopnico));
     const dvig = n * nastop;
     const dolzinaStopnic = n * globinaStopnice;
     const sirina = 1.3;
-    const podest = Math.max(1, o.dolzina - n * naStopnico);
+    const ograjaPodesta = Math.max(0, o.podest);
+    const podest = Math.max(1.1, ograjaPodesta + 0.1);
     const visinaFasade = dvig + 2.7;
     g.add(skatla(dolzinaStopnic + podest + 1, visinaFasade, 0.3, M.fasada, (dolzinaStopnic + podest) / 2, visinaFasade / 2, -sirina - 0.15));
     // vhodna vrata
@@ -490,21 +490,23 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     const posevna = ograjaVzdolz(dolzinaStopnic, h, o.polnilo, M, dvig);
     posevna.position.set(0.05, nastop, -0.06);
     g.add(posevna);
-    const vodoravna = ograjaVzdolz(podest - 0.05, h, o.polnilo, M);
-    vodoravna.position.set(dolzinaStopnic + 0.05, dvig, -0.06);
-    g.add(vodoravna);
+    if (ograjaPodesta >= 0.3) {
+      const vodoravna = ograjaVzdolz(ograjaPodesta, h, o.polnilo, M);
+      vodoravna.position.set(dolzinaStopnic + 0.05, dvig, -0.06);
+      g.add(vodoravna);
+    }
     return { skupina: g, sredisce: new THREE.Vector3((dolzinaStopnic + podest) / 2, dvig * 0.7, -sirina / 2), velikost: dolzinaStopnic + podest + 1.5, smer: new THREE.Vector3(-0.8, 0.45, 1) };
   }
 
   // notranja stopniščna: kovinska nosilca z lesenimi nastopnimi ploskvami ob steni, ograja na prosti strani
   const nastop = 0.18, globinaStopnice = 0.27;
   const naStopnico = Math.hypot(globinaStopnice, nastop);
-  const zelenZgornji = Math.min(Math.max(o.dolzina * 0.25, 0.6), 4);
-  const n = Math.max(3, Math.round((o.dolzina - zelenZgornji) / naStopnico));
+  const n = Math.max(3, Math.round(o.dolzina / naStopnico));
   const dvig = n * nastop;
   const dolzinaStopnic = n * globinaStopnice;
   const sirina = 1.0;
-  const zgornji = Math.max(0.6, o.dolzina - n * naStopnico);
+  const ograjaZgoraj = Math.max(0, o.podest);
+  const zgornji = Math.max(0.8, ograjaZgoraj);
   g.add(skatla(dolzinaStopnic + zgornji + 0.8, dvig + 2.8, 0.2, M.fasada, (dolzinaStopnic + zgornji) / 2, (dvig + 2.8) / 2, -sirina - 0.1));
   // zgornja etaža
   g.add(skatla(zgornji + 0.6, 0.25, sirina + 1.2, M.fasada, dolzinaStopnic + zgornji / 2 + 0.3, dvig - 0.125, -sirina / 2 + 0.6));
@@ -520,9 +522,11 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   const posevna = ograjaVzdolz(dolzinaStopnic, h, o.polnilo, M, dvig);
   posevna.position.set(0.1, nastop, 0.02);
   g.add(posevna);
-  const vodoravna = ograjaVzdolz(zgornji, h, o.polnilo, M);
-  vodoravna.position.set(dolzinaStopnic + 0.1, dvig, 0.02);
-  g.add(vodoravna);
+  if (ograjaZgoraj >= 0.3) {
+    const vodoravna = ograjaVzdolz(ograjaZgoraj, h, o.polnilo, M);
+    vodoravna.position.set(dolzinaStopnic + 0.1, dvig, 0.02);
+    g.add(vodoravna);
+  }
   return { skupina: g, sredisce: new THREE.Vector3((dolzinaStopnic + zgornji) / 2, dvig * 0.6, -sirina / 2), velikost: dolzinaStopnic + zgornji + 1, smer: new THREE.Vector3(-0.7, 0.35, 1), podlaga: 'parket' };
 }
 
