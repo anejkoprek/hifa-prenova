@@ -1,6 +1,9 @@
 // Tehnična risba ograje v pogledu od spredaj (SVG kot niz). Brez odvisnosti, deluje v brskalniku in ob buildu.
 // Vse mere so v metrih, s = merilo v px na meter.
 
+import { obl, oblikeSvg, type Vzorec } from '../vzorci';
+import { odsekiZarkov, type VzorecZarkov } from '../zarki';
+
 export type TipOgraje = 'balkonska' | 'dvoriscna' | 'stopniscna-zunanja' | 'stopniscna-notranja';
 export type Polnilo = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana';
 export type Montaza = 'vrh' | 'stran' | 'podzidek' | 'temelj';
@@ -27,6 +30,10 @@ export interface OgrajaOpts {
   zakljucek?: 'rocaj' | 'odprto';
   /** višina vodoravne šipke od tal, cm */
   sipka?: number;
+  /** perforirana pločevina: vzorec izreza */
+  vzorec?: Vzorec;
+  /** žarki: izvedba */
+  zarki?: VzorecZarkov;
   /** montaža s strani: polja na nosilni plošči brez stebričkov */
   brezStebrickov?: boolean;
   /** montaža s strani: ograja sega pod nivo tal, cm */
@@ -54,7 +61,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const podaljsek = stran ? Math.min(Math.max(o.podaljsek ?? 0, 0), 40) / 100 : 0;
   // s strani: spodnji rob poravnan s tlemi (0) ali nižje čez čelo plošče
   const clearance = stran ? -podaljsek : dvorisce ? 0.05 : 0.06;
-  const odprte = o.polnilo === 'palicna' && o.zakljucek === 'odprto';
+  const odprte = (o.polnilo === 'palicna' || o.polnilo === 'vertikalne') && o.zakljucek === 'odprto';
   const brezStebrov = stran && !!o.brezStebrickov;
   const razmik = (privzeto: number) => (o.razmikPolnila && o.razmikPolnila > 0 ? o.razmikPolnila / 100 : privzeto);
   const hm = visina - clearance;
@@ -150,7 +157,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
       case 'vertikalne': {
         const bw = Math.max(1.6, 0.03 * s);
         for (let x = xa + 0.04; x < xb - 0.02; x += 0.03 + razmik(0.025)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.5"/>`);
-        okvir = true;
+        if (!odprte) okvir = true; // odprte letvice: brez okvirja zgoraj
         break;
       }
       case 'horizontalne': {
@@ -164,14 +171,13 @@ export function risiOgrajo(o: OgrajaOpts): string {
         break;
       }
       case 'zarki': {
-        const hgt = maxY - minY;
-        const dx = hgt / 1.7;
         const sw = Math.max(1.4, 0.012 * s);
-        const step = razmik(0.13) * 1.55 * s;
-        for (let t = minX - dx; t < maxX + dx; t += step) {
-          g.push(`<line x1="${n(t)}" y1="${n(maxY)}" x2="${n(t + dx)}" y2="${n(minY)}" stroke="${barva}" stroke-width="${n(sw)}"/>`);
-          g.push(`<line x1="${n(t)}" y1="${n(minY)}" x2="${n(t + dx)}" y2="${n(maxY)}" stroke="${barva}" stroke-width="${n(sw)}"/>`);
+        const visPolja = (bottomFn(xa) - topFn(xa)) / s;
+        const seme = Number(key.replace(/\D/g, '')) || 0;
+        for (const [x1, v1, x2, v2] of odsekiZarkov(o.zarki ?? 'pokoncni', xb - xa, visPolja, razmik(0.13), seme)) {
+          g.push(`<line x1="${n(X(xa + x1))}" y1="${n(bottomFn(xa + x1) - v1 * s)}" x2="${n(X(xa + x2))}" y2="${n(bottomFn(xa + x2) - v2 * s)}" stroke="${barva}" stroke-width="${n(sw)}" stroke-linecap="round"/>`);
         }
+        okvir = true;
         break;
       }
       case 'steklo': {
@@ -182,14 +188,23 @@ export function risiOgrajo(o: OgrajaOpts): string {
         break;
       }
       case 'perforirana': {
-        const pid = `${uid}-perf`;
-        if (!defs.some((d) => d.includes(`id="${pid}"`))) {
-          const st = Math.max(5, 0.03 * s);
-          defs.push(`<pattern id="${pid}" width="${n(st)}" height="${n(st)}" patternUnits="userSpaceOnUse"><circle cx="${n(st / 2)}" cy="${n(st / 2)}" r="${n(st * 0.22)}" fill="var(--draw-bg)"/></pattern>`);
-        }
+        // polna pločevina z izrezi izbranega vzorca; ploščica 1 m se ponavlja po dolžini in sledi naklonu
         g.push(`<polygon points="${poly(p)}" fill="${barva}" stroke="${edge}" stroke-width="0.6"/>`);
-        const hgt = maxY - minY;
-        g.push(`<rect x="${n(minX)}" y="${n(minY + hgt * 0.32)}" width="${n(maxX - minX)}" height="${n(hgt * 0.2)}" fill="url(#${pid})" opacity="0.85"/>`);
+        const vz = o.vzorec ?? 'kvadrati';
+        const Hm = Math.max(0.2, (bottomFn(xa) - topFn(xa)) / s - 0.04);
+        if (vz === 'po-meri') {
+          const cx = (X(xa) + X(xb)) / 2, cy = (bottomFn((xa + xb) / 2) + topFn((xa + xb) / 2)) / 2;
+          const fsm = Math.max(10, Math.min(0.09 * s, (X(xb) - X(xa)) / 9));
+          g.push(`<rect x="${n(cx - (X(xb) - X(xa)) * 0.36)}" y="${n(cy - Hm * s * 0.28)}" width="${n((X(xb) - X(xa)) * 0.72)}" height="${n(Hm * s * 0.56)}" rx="6" fill="none" stroke="var(--draw-bg)" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.8"/>`);
+          g.push(`<text x="${n(cx)}" y="${n(cy + fsm * 0.35)}" text-anchor="middle" font-size="${n(fsm)}" fill="var(--draw-bg)" opacity="0.9">vaš motiv</text>`);
+        } else {
+          const tid = `${uid}-vz-${vz}-${Math.round(Hm * 100)}`;
+          if (!defs.some((d) => d.includes(`id="${tid}"`))) defs.push(`<g id="${tid}">${oblikeSvg(obl(vz, Hm), s, 0, 0, 'var(--draw-bg)')}</g>`);
+          const k = slope / s; // naklon v px na px
+          const uses: string[] = [];
+          for (let t = 0; t < xb - xa; t += 1) uses.push(`<use href="#${tid}" x="${n(t * s)}"/>`);
+          g.push(`<g transform="matrix(1 ${n(k * 1000) / 1000} 0 1 ${n(X(xa))} ${n(bottomFn(xa) - 0.02 * s)})">${uses.join('')}</g>`);
+        }
         break;
       }
     }
@@ -227,8 +242,8 @@ export function risiOgrajo(o: OgrajaOpts): string {
   else rail((x) => Yb(x) - 0.03 * s, 0.03);
   if (odprte) {
     // odprte palice: brez ročaja, palice povezuje vodoravna šipka
-    const hs = Math.min(Math.max((o.sipka ?? visina * 50) / 100, 0.1), visina / 2);
-    rail((x) => Fy - (stopOff + Math.min(x, Ls) * r + hs) * s - 0.0125 * s, 0.025);
+    const hs = Math.min(Math.max((o.sipka ?? visina * 100 - 12) / 100, visina / 2), visina - 0.06);
+    rail((x) => Fy - (stopOff + Math.min(x, Ls) * r + hs) * s - 0.006 * s, 0.012);
   } else if (balkonSlog) {
     // ročaj nekoliko nad polnilom
     rail((x) => Yt(x) - 0.012 * s, 0.05);

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Check, LinkSimple, ArrowCounterClockwise, Cube, PencilRuler, Minus, Plus } from '@phosphor-icons/react';
+import { Check, LinkSimple, ArrowCounterClockwise, Cube, PencilRuler, Minus, Plus, PencilSimpleLine } from '@phosphor-icons/react';
 import Povprasevanje from './Povprasevanje';
 import PolniloIkona from './PolniloIkona';
 import { risiOgrajo } from '@/lib/risbe/ograja';
@@ -32,6 +32,8 @@ import {
   razmikStebrovZaTip,
   razmikPolnilaZaPolnilo,
   zakljucki,
+  imaZakljucek,
+  sipkaPrivzeto,
   sipkaRazpon,
   podaljsekRazpon,
   materialiZaTip,
@@ -45,6 +47,8 @@ import {
 } from '@/lib/konfigurator';
 import { polnilaNazivi, polnilaOpisi } from '@/lib/moznosti';
 import { RAL, ralHex } from '@/lib/ral';
+import { vzorci, obl, oblikeSvg, type Vzorec } from '@/lib/vzorci';
+import { vzorciZarkov, odsekiZarkov, type VzorecZarkov } from '@/lib/zarki';
 import s from './Konfigurator.module.css';
 
 // three.js se naloži šele ob prvem odprtju 3D pogleda
@@ -75,6 +79,28 @@ function barvaIkone(koda: string) {
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
   const svetlost = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return svetlost > 0.62 ? '#7b8286' : `#${hex}`;
+}
+
+/** majhen predogled vzorca izreza: pločevina v izbrani barvi, izrezi svetli */
+function VzorecIkona({ vzorec, barva }: { vzorec: Vzorec; barva: string }) {
+  if (vzorec === 'po-meri') return <PencilSimpleLine size={26} weight="duotone" style={{ color: barva }} aria-hidden />;
+  const s = 40;
+  return (
+    <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden style={{ borderRadius: 4, display: 'block' }}
+      dangerouslySetInnerHTML={{ __html: `<rect width="40" height="40" fill="${barva}"/>${oblikeSvg(obl(vzorec, 1), s, 0, 40, '#f4f5f1')}` }} />
+  );
+}
+
+/** predogled izvedbe žarkov: palice v okvirju */
+function ZarkiIkona({ vzorec, barva }: { vzorec: VzorecZarkov; barva: string }) {
+  const L = 1.25, h = 1, s = 32, ox = 4, oy = 36;
+  const crte = odsekiZarkov(vzorec, L, h, 0.15, 0)
+    .map(([x1, v1, x2, v2]) => `<line x1="${ox + x1 * s}" y1="${oy - v1 * s}" x2="${ox + x2 * s}" y2="${oy - v2 * s}"/>`)
+    .join('');
+  return (
+    <svg viewBox="0 0 48 40" width="48" height="40" aria-hidden style={{ display: 'block' }}
+      dangerouslySetInnerHTML={{ __html: `<g stroke="${barva}" stroke-width="1.3" stroke-linecap="round">${crte}</g><rect x="${ox}" y="${oy - h * s}" width="${L * s}" height="${h * s}" fill="none" stroke="${barva}" stroke-width="2.2"/>` }} />
+  );
 }
 
 /* ---------- gradniki ---------- */
@@ -317,6 +343,7 @@ export default function Konfigurator() {
       // vsako polnilo ima svoj tipičen razmik letvic
       if ((k === 'tip' || k === 'polnilo') && n.polnilo !== o.polnilo) n.razmikPolnila = razmikPolnilaZaPolnilo[n.polnilo]?.privzeto ?? 0;
       // šipka ostane med četrtino in polovico višine
+      if (k === 'zakljucek' && v === 'odprto' && o.zakljucek !== 'odprto') n.sipka = sipkaPrivzeto(n.visina);
       const sr = sipkaRazpon(n.visina);
       if (k === 'visina' || k === 'tip') n.sipka = Math.min(sr.max, Math.max(sr.min, n.sipka));
       return n;
@@ -353,8 +380,10 @@ export default function Konfigurator() {
         pogon: og.pogon && og.vrata !== 'brez',
         razmikStebrov: og.razmikStebrov,
         razmikPolnila: og.razmikPolnila,
-        zakljucek: og.polnilo === 'palicna' ? og.zakljucek : 'rocaj',
-        sipka: Math.min(og.sipka, sipkaRazpon(og.visina).max),
+        zakljucek: imaZakljucek(og.polnilo) ? og.zakljucek : 'rocaj',
+        vzorec: og.vzorec,
+        zarki: og.zarki,
+        sipka: Math.min(Math.max(og.sipka, sipkaRazpon(og.visina).min), sipkaRazpon(og.visina).max),
         brezStebrickov: og.tip === 'balkonska' && og.montaza === 'stran' && og.brezStebrickov,
         podaljsek: og.tip === 'balkonska' && og.montaza === 'stran' ? og.podaljsek : 0,
         id: 'konf-og',
@@ -513,14 +542,43 @@ export default function Konfigurator() {
                     </span>
                   )}
                 />
-                {og.polnilo === 'palicna' ? (
+                {og.polnilo === 'zarki' ? (
                   <>
-                    <p className={s.podnaslov}>Zaključek palic zgoraj</p>
+                    <p className={s.podnaslov}>Izvedba žarkov</p>
+                    <Kartice
+                      ime="zarki"
+                      moznosti={vzorciZarkov}
+                      vrednost={og.zarki}
+                      nastavi={(v) => posodobiOg('zarki', v)}
+                      ikona={(v) => <ZarkiIkona vzorec={v} barva={barvaIkone(og.ral)} />}
+                    />
+                  </>
+                ) : null}
+                {og.polnilo === 'perforirana' ? (
+                  <>
+                    <p className={s.podnaslov}>Vzorec izreza</p>
+                    <Kartice
+                      ime="vzorec"
+                      moznosti={vzorci}
+                      vrednost={og.vzorec}
+                      nastavi={(v) => posodobiOg('vzorec', v)}
+                      ikona={(v) => <VzorecIkona vzorec={v} barva={barvaIkone(og.ral)} />}
+                    />
+                    {og.vzorec === 'po-meri' ? (
+                      <p className={`small muted ${s.opomba}`}>
+                        Izrez naredimo po vaši skici, fotografiji ali logotipu. Pripnite jo spodaj v povpraševanju.
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
+                {imaZakljucek(og.polnilo) ? (
+                  <>
+                    <p className={s.podnaslov}>Zaključek zgoraj</p>
                     <Kartice ime="zakljucek" moznosti={zakljucki} vrednost={og.zakljucek} nastavi={(v) => posodobiOg('zakljucek', v)} />
                     {og.zakljucek === 'odprto' ? (
                       <Mera
-                        oznaka="Višina vodoravne šipke od tal"
-                        vrednost={Math.min(og.sipka, sipkaRazpon(og.visina).max)}
+                        oznaka="Višina tanke šipke od tal"
+                        vrednost={Math.min(Math.max(og.sipka, sipkaRazpon(og.visina).min), sipkaRazpon(og.visina).max)}
                         nastavi={(v) => posodobiOg('sipka', v)}
                         min={sipkaRazpon(og.visina).min}
                         max={sipkaRazpon(og.visina).max}

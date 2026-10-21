@@ -3,6 +3,8 @@ import type { TipOgraje, Polnilo, Montaza, Vrata } from './risbe/ograja';
 import type { TipNadstreska, Postavitev, Kritina } from './risbe/nadstresek';
 import { polnilaNazivi } from './moznosti';
 import { RAL } from './ral';
+import { vzorci, type Vzorec } from './vzorci';
+import { vzorciZarkov, type VzorecZarkov } from './zarki';
 
 export type Material = 'aluminij' | 'inox' | 'jeklo';
 
@@ -23,9 +25,13 @@ export type OgrajaStanje = {
   razmikStebrov: number;
   /** svetli razmik med vmesnimi letvicami oz. palicami, cm */
   razmikPolnila: number;
-  /** pri palicah: vodoravni ročaj čez palice ali odprte palice z vodoravno šipko */
+  /** pri palicah in navpičnih letvicah: zgornja letev čez palice ali odprte palice s tanko vodoravno šipko */
   zakljucek: Zakljucek;
-  /** višina vodoravne šipke pri odprtih palicah, cm od tal (največ polovica višine) */
+  /** perforirana pločevina: vzorec izreza */
+  vzorec: Vzorec;
+  /** žarki: izvedba */
+  zarki: VzorecZarkov;
+  /** višina tanke vodoravne šipke pri odprtih palicah, cm od tal (od polovice višine navzgor) */
   sipka: number;
   /** montaža s strani: ograja pritrjena neposredno na nosilno ploščo, brez stebričkov */
   brezStebrickov: boolean;
@@ -59,18 +65,18 @@ export const tipiOgraj: { id: TipOgraje; naziv: string; opis: string }[] = [
   { id: 'stopniscna-notranja', naziv: 'Notranja stopniščna', opis: 'V hiši, tudi z lesom' },
 ];
 
-// brez stekla; perforirana pločevina samo pri dvoriščnih ograjah
+// brez stekla; perforirana pločevina pri dvoriščnih in zunanjih stopniščnih ograjah (ne na balkonih)
 export const polnilaZaTip: Record<TipOgraje, Polnilo[]> = {
   balkonska: ['vertikalne', 'palicna', 'horizontalne', 'zarki'],
   dvoriscna: ['horizontalne', 'vertikalne', 'palicna', 'perforirana', 'zarki'],
-  'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
+  'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'perforirana'],
   'stopniscna-notranja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
 };
 
 /** razmik nosilnih stebrov (m) */
 export const razmikStebrovZaTip: Record<TipOgraje, { min: number; max: number; privzeto: number }> = {
   balkonska: { min: 0.8, max: 2, privzeto: 1.3 },
-  dvoriscna: { min: 1.2, max: 2.5, privzeto: 2 },
+  dvoriscna: { min: 1, max: 3, privzeto: 2 },
   'stopniscna-zunanja': { min: 0.8, max: 1.6, privzeto: 1.2 },
   'stopniscna-notranja': { min: 0.8, max: 1.6, privzeto: 1.2 },
 };
@@ -80,15 +86,19 @@ export const razmikPolnilaZaPolnilo: Partial<Record<Polnilo, { min: number; max:
   vertikalne: { min: 1, max: 20, privzeto: 2.5, korak: 0.5, oznaka: 'Razmik med vmesnimi letvicami' },
   palicna: { min: 4, max: 20, privzeto: 9, korak: 0.5, oznaka: 'Razmik med palicami' },
   horizontalne: { min: 0.5, max: 15, privzeto: 1.5, korak: 0.5, oznaka: 'Razmik med lamelami' },
-  zarki: { min: 8, max: 30, privzeto: 13, korak: 1, oznaka: 'Razmik med žarki' },
+  zarki: { min: 5, max: 30, privzeto: 9, korak: 1, oznaka: 'Razmik med žarki' },
 };
 
 export const zakljucki: { id: Zakljucek; naziv: string; opis: string }[] = [
-  { id: 'rocaj', naziv: 'Z ročajem', opis: 'Vodoravni ročaj pokrije palice zgoraj' },
-  { id: 'odprto', naziv: 'Odprte palice', opis: 'Palice proste navzgor, povezuje jih vodoravna šipka' },
+  { id: 'rocaj', naziv: 'Z zgornjo letvijo', opis: 'Vodoravna letev pokrije palice zgoraj' },
+  { id: 'odprto', naziv: 'Odprte navzgor', opis: 'Brez zgornje letve, palice povezuje tanka šipka' },
 ];
-/** šipka pri odprtih palicah: največ na polovici višine, najmanj na četrtini */
-export const sipkaRazpon = (visina: number) => ({ min: Math.round(visina * 0.25), max: Math.floor(visina / 2) });
+/** polnila, pri katerih lahko palice zgoraj ostanejo odprte */
+export const imaZakljucek = (p: Polnilo) => p === 'palicna' || p === 'vertikalne';
+export { vzorci, vzorciZarkov };
+/** šipka pri odprtih palicah: od polovice višine navzgor do tik pod vrhom letev (ne nižje od polovice) */
+export const sipkaRazpon = (visina: number) => ({ min: Math.ceil(visina / 2), max: Math.max(Math.ceil(visina / 2), visina - 8) });
+export const sipkaPrivzeto = (visina: number) => visina - 12;
 export const podaljsekRazpon = { min: 0, max: 40, privzeto: 0 };
 
 export const visinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto: number }> = {
@@ -192,7 +202,9 @@ export const privzetaOgraja: OgrajaStanje = {
   razmikStebrov: 1.3,
   razmikPolnila: 2.5,
   zakljucek: 'rocaj',
-  sipka: 55,
+  vzorec: 'kvadrati',
+  zarki: 'pokoncni',
+  sipka: 98,
   brezStebrickov: false,
   podaljsek: 0,
 };
@@ -251,7 +263,9 @@ function dodatkiIzUrl(q: URLSearchParams, tip: TipOgraje) {
     razmikStebrov: omeji(stevilo(q, 'stebri', rs.privzeto), rs.min, rs.max),
     razmikPolnila: rp ? omeji(stevilo(q, 'razmik', rp.privzeto), rp.min, rp.max) : 0,
     zakljucek: izbira(q.get('zakljucek'), ['rocaj', 'odprto'] as const, 'rocaj'),
-    sipka: omeji(stevilo(q, 'sipka', sr.max), sr.min, sr.max),
+    vzorec: izbira(q.get('vzorec'), vzorci.map((v) => v.id), 'kvadrati'),
+    zarki: izbira(q.get('zarki'), vzorciZarkov.map((v) => v.id), 'pokoncni'),
+    sipka: omeji(stevilo(q, 'sipka', sipkaPrivzeto(visina)), sr.min, sr.max),
     brezStebrickov: q.get('brezStebrickov') === '1',
     podaljsek: omeji(stevilo(q, 'podaljsek', 0), podaljsekRazpon.min, podaljsekRazpon.max),
   };
@@ -288,10 +302,12 @@ export function ograjaVUrl(o: OgrajaStanje): string {
   if (jeStopnisce(o.tip)) q.set('podest', String(o.podest));
   q.set('stebri', String(o.razmikStebrov));
   if (razmikPolnilaZaPolnilo[o.polnilo]) q.set('razmik', String(o.razmikPolnila));
-  if (o.polnilo === 'palicna') {
+  if (imaZakljucek(o.polnilo)) {
     q.set('zakljucek', o.zakljucek);
     if (o.zakljucek === 'odprto') q.set('sipka', String(o.sipka));
   }
+  if (o.polnilo === 'perforirana') q.set('vzorec', o.vzorec);
+  if (o.polnilo === 'zarki') q.set('zarki', o.zarki);
   if (o.tip === 'balkonska' && o.montaza === 'stran') {
     if (o.brezStebrickov) q.set('brezStebrickov', '1');
     if (o.podaljsek) q.set('podaljsek', String(o.podaljsek));
@@ -347,8 +363,12 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
   vrstice.push(`Razmik nosilnih stebrov: ${m(o.razmikStebrov)}`);
   const rp = razmikPolnilaZaPolnilo[o.polnilo];
   if (rp) vrstice.push(`${rp.oznaka}: ${o.razmikPolnila.toLocaleString('sl-SI')} cm`);
-  if (o.polnilo === 'palicna') {
-    vrstice.push(o.zakljucek === 'rocaj' ? 'Palice z vodoravnim ročajem zgoraj' : `Odprte palice, vodoravna šipka na višini ${o.sipka} cm`);
+  if (imaZakljucek(o.polnilo)) {
+    vrstice.push(o.zakljucek === 'rocaj' ? 'Z zgornjo letvijo čez palice' : `Odprte navzgor brez zgornje letve, tanka šipka na višini ${o.sipka} cm`);
+  }
+  if (o.polnilo === 'zarki') vrstice.push(`Žarki: ${naziv(vzorciZarkov, o.zarki).toLowerCase()}`);
+  if (o.polnilo === 'perforirana') {
+    vrstice.push(o.vzorec === 'po-meri' ? 'Vzorec izreza: po želji stranke (skico pošljem posebej)' : `Vzorec izreza: ${naziv(vzorci, o.vzorec).toLowerCase()}`);
   }
   if (montazeZaTip[o.tip].length) vrstice.push(`Montaža: ${naziv(montazeZaTip[o.tip], o.montaza).toLowerCase()}`);
   if (o.tip === 'balkonska' && o.montaza === 'stran') {

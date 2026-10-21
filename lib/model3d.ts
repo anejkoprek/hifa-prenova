@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import type { OgrajaStanje, NadstresekStanje } from './konfigurator';
 import type { Polnilo } from './risbe/ograja';
 import { ralHex } from './ral';
+import { obl, oblikeNaPlatno, type Vzorec } from './vzorci';
+import { odsekiZarkov, type VzorecZarkov } from './zarki';
 
 /* ---------------------------------------------------------------- materiali */
 
@@ -114,8 +116,8 @@ function obrezi(p: [number, number], s: [number, number], L: number, h: number, 
   return [p[0] + s[0] * t0, p[1] + s[1] * t0, p[0] + s[0] * t1, p[1] + s[1] * t1];
 }
 
-/** prozorna ali perforirana ploskev v obliki paralelograma */
-function ploskev(L: number, h: number, r: number, m: THREE.Material, debelina = 0.01) {
+/** prozorna ali perforirana ploskev v obliki paralelograma; uvMetri: u v metrih (maska se ponavlja vsak meter) */
+function ploskev(L: number, h: number, r: number, m: THREE.Material, debelina = 0.01, uvMetri = false) {
   const oblika = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(L, r), new THREE.Vector2(L, r + h), new THREE.Vector2(0, h)]);
   const geo = new THREE.ExtrudeGeometry(oblika, { depth: debelina, bevelEnabled: false });
   geo.translate(0, 0, -debelina / 2);
@@ -124,7 +126,7 @@ function ploskev(L: number, h: number, r: number, m: THREE.Material, debelina = 
   const poz = geo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < poz.count; i++) {
     const x = poz.getX(i), y = poz.getY(i);
-    uv.setXY(i, x / L, (y - (x * r) / L) / h);
+    uv.setXY(i, uvMetri ? x : x / L, (y - (x * r) / L) / h);
   }
   const mesh = new THREE.Mesh(geo, m);
   mesh.castShadow = true;
@@ -132,22 +134,26 @@ function ploskev(L: number, h: number, r: number, m: THREE.Material, debelina = 
   return mesh;
 }
 
-let perforacija: THREE.CanvasTexture | null = null;
-/** maska za pločevino: polna pločevina z vodoravnim trakom luknjic */
-function teksturaPerforacije() {
-  if (perforacija || typeof document === 'undefined') return perforacija;
+const maske = new Map<string, THREE.CanvasTexture | null>();
+/** maska izrezov za pločevino: belo = pločevina, črno = izrez. Ploščica 1 m × h, po dolžini se ponavlja. */
+function maskaVzorca(vzorec: Vzorec, h: number) {
+  const kljuc = `${vzorec}|${Math.round(h * 100)}`;
+  if (maske.has(kljuc)) return maske.get(kljuc)!;
+  if (typeof document === 'undefined') return null;
+  const ppm = 512;
   const c = document.createElement('canvas');
-  c.width = 512; c.height = 512;
+  c.width = ppm;
+  c.height = Math.max(64, Math.round(h * ppm));
   const g = c.getContext('2d')!;
   g.fillStyle = '#fff';
-  g.fillRect(0, 0, 512, 512);
+  g.fillRect(0, 0, c.width, c.height);
   g.fillStyle = '#000';
-  for (let y = 300; y < 420; y += 18) for (let x = 6 + ((y / 18) % 2) * 9; x < 512; x += 18) {
-    g.beginPath(); g.arc(x, 512 - y, 5, 0, Math.PI * 2); g.fill();
-  }
-  perforacija = new THREE.CanvasTexture(c);
-  perforacija.wrapS = THREE.RepeatWrapping;
-  return perforacija;
+  oblikeNaPlatno(g, obl(vzorec, h), ppm, c.height);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = 4;
+  maske.set(kljuc, t);
+  return t;
 }
 
 /* ---------------------------------------------------------------- polje ograje */
@@ -166,6 +172,12 @@ export type OpcijeOgraje = {
   brezStebrov?: boolean;
   /** razdalja od dna polja do spodnjega profila (privzeto 6 cm) */
   dno?: number;
+  /** perforirana pločevina: vzorec izreza */
+  vzorec?: Vzorec;
+  /** žarki: izvedba */
+  zarki?: VzorecZarkov;
+  /** zaporedna številka polja (za raznolike, a ponovljive žarke) */
+  seme?: number;
 };
 
 export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Materiali, op: OpcijeOgraje = {}) {
@@ -175,7 +187,7 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
   const dno = op.dno ?? 0.06;
   const zgoraj = (x: number) => x * k + h;
   const spodaj = (x: number) => x * k;
-  const odprte = polnilo === 'palicna' && !!op.odprte;
+  const odprte = (polnilo === 'palicna' || polnilo === 'vertikalne') && !!op.odprte;
   const razmik = (privzeto: number) => (op.razmik && op.razmik > 0 ? op.razmik : privzeto);
 
   if (polnilo !== 'horizontalne') {
@@ -185,9 +197,13 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
   }
   const notri = { y0: dno + okvir, y1: odprte ? h : h - okvir }; // prostor za polnilo
   if (odprte) {
-    // vodoravna šipka skozi palice, da ostanejo poravnane
-    const ys = Math.min(Math.max(op.sipka ?? h / 2, notri.y0 + 0.1), h - 0.1);
-    g.add(palica(0, ys, L, r + ys, 0.025, 0.06, M.kovina));
+    // čisto tanka okrogla šipka skozi palice, da ostanejo poravnane
+    const ys = Math.min(Math.max(op.sipka ?? h - 0.12, notri.y0 + 0.1), h - 0.06);
+    const sip = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, Math.hypot(L, r) + 0.02, 10), M.kovina);
+    sip.position.set(L / 2, ys + r / 2, 0);
+    sip.rotation.z = -Math.PI / 2 + Math.atan2(r, L);
+    sip.castShadow = true;
+    g.add(sip);
   }
 
   if (polnilo === 'vertikalne' || polnilo === 'palicna') {
@@ -211,16 +227,11 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
     g.add(instance(seg, 0.05, 0.02, M.kovina));
     g.add(palica(0, h, L, r + h, 0.02, 0.06, M.kovina));
   } else if (polnilo === 'zarki') {
-    const korak = razmik(0.13);
-    const seg: [number, number, number, number][] = [];
+    // palice v koordinatah polja (x, v od spodnjega roba) preslikamo na naklon polja
     const visina = notri.y1 - notri.y0;
-    const raztezek = L + visina + Math.abs(r);
-    for (let s = -raztezek; s < raztezek; s += korak) {
-      for (const smer of [1, -1]) {
-        const o = obrezi([s, notri.y0], [1, smer], L, visina, r);
-        if (o) seg.push([o[0], o[1] + notri.y0, o[2], o[3] + notri.y0]);
-      }
-    }
+    const seg: [number, number, number, number][] = odsekiZarkov(op.zarki ?? 'pokoncni', L, visina, razmik(0.13), op.seme ?? 0).map(
+      ([x1, v1, x2, v2]) => [x1, x1 * k + notri.y0 + v1, x2, x2 * k + notri.y0 + v2],
+    );
     g.add(instance(seg, 0.012, 0.012, M.kovina));
   } else if (polnilo === 'steklo') {
     const steklo = ploskev(L - 0.06, notri.y1 - notri.y0 - 0.02, r - 0.06 * k, M.steklo, 0.012);
@@ -232,17 +243,17 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
       for (const y of [notri.y0 + 0.08, notri.y1 - 0.08]) g.add(skatla(0.05, 0.05, 0.035, M.kovina, x, spodaj(x) + y, 0));
     }
   } else if (polnilo === 'perforirana') {
+    const vz = op.vzorec ?? 'kvadrati';
+    const hp = notri.y1 - notri.y0;
+    const maska = vz === 'po-meri' ? null : maskaVzorca(vz, hp);
     const pl = new THREE.MeshStandardMaterial({
       color: (M.kovina as THREE.MeshStandardMaterial).color,
       metalness: 0.45,
       roughness: 0.5,
-      alphaMap: teksturaPerforacije(),
-      alphaTest: 0.5,
+      ...(maska ? { alphaMap: maska, alphaTest: 0.5 } : {}),
       side: THREE.DoubleSide,
     });
-    const tex = pl.alphaMap;
-    if (tex) tex.repeat.set(Math.max(1, Math.round(L / 1.2)), 1);
-    g.add(ploskev(L, notri.y1 - notri.y0, r, pl, 0.004));
+    g.add(ploskev(L, hp, r, pl, 0.004, true));
     g.children[g.children.length - 1].position.y = notri.y0;
   }
 
@@ -276,12 +287,12 @@ function ograjaVzdolz(L: number, h: number, polnilo: Polnilo, M: Materiali, r = 
   }
   const reza = op.brezStebrov ? 0.01 : 0.03;
   for (let i = 0; i < n; i++) {
-    const p = polje(d - 2 * reza, h - 0.02, (r * (d - 2 * reza)) / L, polnilo, M, op);
+    const p = polje(d - 2 * reza, h - 0.02, (r * (d - 2 * reza)) / L, polnilo, M, { ...op, seme: i });
     p.position.set(i * d + reza, (r * (i * d + reza)) / L, 0);
     g.add(p);
   }
   // ročaj čez vrh pri stopniščih (pri odprtih palicah ga ni)
-  if (r !== 0 && !(polnilo === 'palicna' && op.odprte)) g.add(palica(-0.05, h + 0.04 - (0.05 * r) / L, L + 0.05, r + h + 0.04 + (0.05 * r) / L, 0.045, 0.06, M.kovina));
+  if (r !== 0 && !((polnilo === 'palicna' || polnilo === 'vertikalne') && op.odprte)) g.add(palica(-0.05, h + 0.04 - (0.05 * r) / L, L + 0.05, r + h + 0.04 + (0.05 * r) / L, 0.045, 0.06, M.kovina));
   return g;
 }
 
@@ -310,12 +321,14 @@ export type Model = { skupina: THREE.Group; sredisce: THREE.Vector3; velikost: n
 export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   const g = new THREE.Group();
   const h = o.visina / 100;
-  const odprte = o.polnilo === 'palicna' && o.zakljucek === 'odprto';
+  const odprte = (o.polnilo === 'palicna' || o.polnilo === 'vertikalne') && o.zakljucek === 'odprto';
   const op: OpcijeOgraje = {
+    vzorec: o.vzorec,
+    zarki: o.zarki,
     razmik: o.razmikPolnila > 0 ? o.razmikPolnila / 100 : undefined,
     razmikStebrov: o.razmikStebrov,
     odprte,
-    sipka: Math.min(o.sipka, o.visina / 2) / 100,
+    sipka: Math.min(Math.max(o.sipka, o.visina / 2), o.visina - 8) / 100,
   };
 
   if (o.tip === 'balkonska') {

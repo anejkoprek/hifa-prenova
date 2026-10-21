@@ -15,8 +15,8 @@ export const polnilaOpisi: Record<PolniloP, string> = {
   palicna: 'Navpični profili 50 × 30 mm, klasična in pregledna izvedba.',
   horizontalne: 'Lamele iz cevi 50 × 20 mm v okvirju, sodoben videz.',
   steklo: 'Kaljeno varnostno steklo v kovinskem okvirju.',
-  zarki: 'Križajoče se palice premera 8 mm, lahek in prepoznaven vzorec.',
-  perforirana: 'Polna pločevina s trakom perforacije, za več zasebnosti.',
+  zarki: 'Palice, ki se križajo: pokončni, vodoravni, pahljača ali mreža.',
+  perforirana: 'Pločevina z izrezi: izberete vzorec ali motiv po želji.',
 };
 
 export const oblikeNazivi: Record<OblikaNadstreska, string> = {
