@@ -5,7 +5,7 @@ import type { OgrajaStanje, NadstresekStanje } from './konfigurator';
 import type { Polnilo } from './risbe/ograja';
 import { ralHex } from './ral';
 import { obl, oblikeNaPlatno, type Vzorec } from './vzorci';
-import { odsekiZarkov, type VzorecZarkov } from './zarki';
+import { zarkiPolja, type VzorecZarkov } from './zarki';
 
 /* ---------------------------------------------------------------- materiali */
 
@@ -178,6 +178,11 @@ export type OpcijeOgraje = {
   zarki?: VzorecZarkov;
   /** zaporedna številka polja (za raznolike, a ponovljive žarke) */
   seme?: number;
+  /** žarki: kje na celotni ograji se polje začne in kako dolga je ograja (neprekinjen vzorec čez stebre) */
+  zarkiOd?: number;
+  zarkiCelota?: number;
+  /** ročaj čez vrh tudi na vodoravnem delu (nadaljevanje stopniščne ograje ob podestu ali zgornji etaži) */
+  rocaj?: boolean;
   /** odprte palice brez stebrov: vse palice enake (kvadratna cev), vsaka sidrana posebej, brez spodnje letve */
   proste?: boolean;
   /** koliko palice segajo pod dno polja (sidranje v ploščo ali ob bok stopnic), m */
@@ -247,10 +252,11 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
   } else if (polnilo === 'zarki') {
     // palice v koordinatah polja (x, v od spodnjega roba) preslikamo na naklon polja
     const visina = notri.y1 - notri.y0;
-    const seg: [number, number, number, number][] = odsekiZarkov(op.zarki ?? 'pokoncni', L, visina, razmik(0.13), op.seme ?? 0).map(
+    const od = op.zarkiOd ?? 0;
+    const seg: [number, number, number, number][] = zarkiPolja(op.zarki ?? 'pokoncni', op.zarkiCelota ?? L, od, od + L, visina, razmik(0.13), op.seme ?? 0).map(
       ([x1, v1, x2, v2]) => [x1, x1 * k + notri.y0 + v1, x2, x2 * k + notri.y0 + v2],
     );
-    g.add(instance(seg, 0.012, 0.012, M.kovina));
+    g.add(instance(seg, 0.014, 0.014, M.kovina));
   } else if (polnilo === 'steklo') {
     const steklo = ploskev(L - 0.06, notri.y1 - notri.y0 - 0.02, r - 0.06 * k, M.steklo, 0.012);
     steklo.position.set(0.03, notri.y0 + 0.01 + 0.03 * k, 0);
@@ -310,12 +316,12 @@ function ograjaVzdolz(L: number, h: number, polnilo: Polnilo, M: Materiali, r = 
   }
   const reza = op.brezStebrov ? 0.01 : 0.03;
   for (let i = 0; i < n; i++) {
-    const p = polje(d - 2 * reza, h - 0.02, (r * (d - 2 * reza)) / L, polnilo, M, { ...op, seme: i });
+    const p = polje(d - 2 * reza, h - 0.02, (r * (d - 2 * reza)) / L, polnilo, M, { ...op, seme: i, zarkiOd: i * d + reza, zarkiCelota: L });
     p.position.set(i * d + reza, (r * (i * d + reza)) / L, 0);
     g.add(p);
   }
   // ročaj čez vrh pri stopniščih (pri odprtih palicah ga ni)
-  if (r !== 0 && !((polnilo === 'palicna' || polnilo === 'vertikalne') && op.odprte)) g.add(palica(-0.05, h + 0.04 - (0.05 * r) / L, L + 0.05, r + h + 0.04 + (0.05 * r) / L, 0.045, 0.06, M.kovina));
+  if ((r !== 0 || op.rocaj) && !((polnilo === 'palicna' || polnilo === 'vertikalne') && op.odprte)) g.add(palica(-0.05, h + 0.04 - (0.05 * r) / L, L + 0.05, r + h + 0.04 + (0.05 * r) / L, 0.045, 0.06, M.kovina));
   return g;
 }
 
@@ -604,12 +610,14 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     const ob = odprte ? 0.035 : -0.06;
     const pod = odprte ? 0.28 : 0;
     // poševni del gre po robovih stopnic do zadnje stopnice; ta je že v višini podesta
-    const dPos = odprte ? dolzinaStopnic - globinaStopnice : dolzinaStopnic;
-    const posevna = ograjaVzdolz(dPos, h, o.polnilo, M, odprte ? dvig - nastop : dvig, pod, op);
+    // poševni del sledi robovom stopnic do zadnje stopnice, ki je že v višini podesta, zato se vodoravni del
+    // nadaljuje na isti višini in z istim ročajem
+    const dPos = dolzinaStopnic - globinaStopnice;
+    const posevna = ograjaVzdolz(dPos, h, o.polnilo, M, dvig - nastop, pod, op);
     posevna.position.set(0.05, nastop, ob);
     g.add(posevna);
     if (ograjaPodesta >= 0.3 || odprte) {
-      const vodoravna = ograjaVzdolz(odprte ? ograjaPodesta + globinaStopnice : ograjaPodesta, h, o.polnilo, M, 0, pod, { ...op, brezPrve: true });
+      const vodoravna = ograjaVzdolz(ograjaPodesta + globinaStopnice, h, o.polnilo, M, 0, pod, { ...op, brezPrve: true, rocaj: true });
       vodoravna.position.set(dPos + 0.05, dvig, ob);
       g.add(vodoravna);
     }
@@ -639,12 +647,12 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   }
   const obN = odprte ? 0.03 : 0.02;
   const podN = odprte ? 0.22 : 0;
-  const dPosN = odprte ? dolzinaStopnic - globinaStopnice : dolzinaStopnic;
-  const posevna = ograjaVzdolz(dPosN, h, o.polnilo, M, odprte ? dvig - nastop : dvig, podN, op);
+  const dPosN = dolzinaStopnic - globinaStopnice;
+  const posevna = ograjaVzdolz(dPosN, h, o.polnilo, M, dvig - nastop, podN, op);
   posevna.position.set(0.1, nastop, obN);
   g.add(posevna);
   if (ograjaZgoraj >= 0.3 || odprte) {
-    const vodoravna = ograjaVzdolz(odprte ? ograjaZgoraj + globinaStopnice : ograjaZgoraj, h, o.polnilo, M, 0, podN, { ...op, brezPrve: true });
+    const vodoravna = ograjaVzdolz(ograjaZgoraj + globinaStopnice, h, o.polnilo, M, 0, podN, { ...op, brezPrve: true, rocaj: true });
     vodoravna.position.set(dPosN + 0.1, dvig, obN);
     g.add(vodoravna);
   }

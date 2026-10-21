@@ -25,7 +25,7 @@ function nakljucno(seme: number) {
 }
 
 /** obreže daljico na pravokotnik [0,L] × [0,h] (Liang–Barsky) */
-function obrezi(x1: number, y1: number, x2: number, y2: number, L: number, h: number): Odsek | null {
+export function obrezi(x1: number, y1: number, x2: number, y2: number, L: number, h: number): Odsek | null {
   const dx = x2 - x1, dy = y2 - y1;
   let t0 = 0, t1 = 1;
   const p = [-dx, dx, -dy, dy];
@@ -44,6 +44,23 @@ function obrezi(x1: number, y1: number, x2: number, y2: number, L: number, h: nu
 }
 
 /**
+ * Žarki za eno polje, ki je del daljše ograje (od xa do xb na skupni dolžini Lcel).
+ * Pokončni in križni žarki se rišejo čez celo ograjo naenkrat in tečejo neprekinjeno od polja do polja,
+ * zato je vzorec umirjen in enakomeren; vodoravni in pahljača ostanejo vezani na posamezno polje.
+ * Vrne odseke v koordinatah polja (x od 0 do xb − xa).
+ */
+export function zarkiPolja(vzorec: VzorecZarkov, Lcel: number, xa: number, xb: number, h: number, razmik: number, seme = 0): Odsek[] {
+  const L = xb - xa;
+  if (vzorec !== 'pokoncni' && vzorec !== 'krizni') return odsekiZarkov(vzorec, L, h, razmik, seme);
+  const out: Odsek[] = [];
+  for (const [x1, v1, x2, v2] of odsekiZarkov(vzorec, Math.max(Lcel, xb), h, razmik, 0)) {
+    const o = obrezi(x1 - xa, v1, x2 - xa, v2, L, h);
+    if (o && Math.hypot(o[2] - o[0], o[3] - o[1]) > 0.04) out.push(o);
+  }
+  return out;
+}
+
+/**
  * Odseki palic za eno polje dolžine L in višine h.
  * razmik: povprečen razmik med palicami (m), seme: zaporedna številka polja (da so polja različna, a vedno enaka).
  */
@@ -56,12 +73,13 @@ export function odsekiZarkov(vzorec: VzorecZarkov, L: number, h: number, razmik:
   };
 
   if (vzorec === 'pokoncni') {
-    // palice začnejo tudi malo izven polja, da so robovi enako gosti kot sredina
-    const sirsi = L + h * 0.5;
+    // palice začnejo tudi malo izven polja, da so robovi enako gosti kot sredina; nagib se izmenjuje
+    // (levo, desno) v zmernem razponu, zato vzorec deluje živo, a urejeno, tudi na naklonu stopnišča
+    const sirsi = L + h * 0.4;
     const n = Math.max(3, Math.round(sirsi / g));
     for (let i = 0; i < n; i++) {
-      const xb = -h * 0.25 + ((i + 0.15 + rnd() * 0.7) * sirsi) / n;
-      const nagib = (rnd() < 0.5 ? -1 : 1) * h * (0.06 + rnd() * 0.32);
+      const xb = -h * 0.2 + ((i + 0.4 + rnd() * 0.2) * sirsi) / n;
+      const nagib = (i % 2 === 0 ? -1 : 1) * h * (0.14 + rnd() * 0.1);
       dodaj(obrezi(xb, 0, xb + nagib, h, L, h));
     }
   } else if (vzorec === 'vodoravni') {
@@ -87,7 +105,7 @@ export function odsekiZarkov(vzorec: VzorecZarkov, L: number, h: number, razmik:
     }
   } else {
     const dxk = h * 0.58;
-    for (let s = -dxk; s < L + dxk; s += g * 1.15) {
+    for (let s = -dxk; s < L + dxk; s += g * 2.6) {
       dodaj(obrezi(s, 0, s + dxk, h, L, h));
       dodaj(obrezi(s + dxk, 0, s, h, L, h));
     }

@@ -29,7 +29,7 @@ import s from './Procelje.module.css';
 type Vb = { x: number; y: number; w: number; h: number };
 type Prostor = 'zunaj' | 'notri';
 /** faze vstopa: približanje vratom, odpiranje vrat, nato notranjost na istem mestu */
-type Prehod = null | 'vrata' | 'odpira';
+type Prehod = null | 'vrata' | 'odpira' | 'ven' | 'odprto' | 'zapira';
 const brezGibanja = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const cm = (x: number) => (x + 0.9) * 100;
 const cz = (z: number) => (9.5 - z) * 100;
@@ -168,17 +168,36 @@ export default function Procelje() {
     });
   };
 
+  // izstop: pot do vrat v notranjosti, zunaj se odprta vrata zaprejo za obiskovalcem, pogled se oddalji
   const izstopi = () => {
     if (prehod) return;
-    setProstor('zunaj');
-    setIzbran('A');
-    setRisano((n) => n + 1);
+    setPriblizano(false);
+    const razmerje = osnova.w / osnova.h;
+    const priVratih = okvirDela('vhod', razmerje, 0.55);
+    const zelo = okvirDela('vhod', razmerje, 0.02);
+    const ven = () => {
+      setProstor('zunaj');
+      setIzbran('A');
+      setRisano((n) => n + 1);
+    };
     if (brezGibanja()) {
+      ven();
       setVb(osnova);
       return;
     }
-    setVb(okvirDela('vhod', osnova.w / osnova.h, 0.55));
-    premakni(osnova, 850);
+    setPrehod('ven');
+    premakni(zelo, 600);
+    pocakaj(650, () => {
+      ven();
+      setPrehod('odprto');
+      setVb(zelo);
+      premakni(priVratih, 550);
+    });
+    pocakaj(1250, () => setPrehod('zapira'));
+    pocakaj(1950, () => {
+      setPrehod(null);
+      premakni(osnova, 850);
+    });
   };
 
   useEffect(() => {
@@ -235,8 +254,8 @@ export default function Procelje() {
           >
             <g key={prostor} className={s.prostor} dangerouslySetInnerHTML={{ __html: svg }} />
             {/* vrata med vstopom: za njimi topla svetloba, krilo se odpre navznoter */}
-            {prehod ? (
-              <g className={s.vhod} data-odprto={prehod === 'odpira' || undefined} aria-hidden>
+            {prehod && prehod !== 'ven' ? (
+              <g className={s.vhod} data-odprto={prehod === 'odpira' || prehod === 'odprto' || undefined} aria-hidden>
                 <rect x={cm(VHOD.x1 + 0.07)} y={cz(VHOD.z2 - 0.07)} width={(VHOD.x2 - VHOD.x1 - 0.14) * 100} height={(VHOD.z2 - VHOD.z1 - 0.1) * 100} className={s.vhodLuc} />
                 <g className={s.krilo}>
                   <rect x={cm(VHOD.x1 + 0.07)} y={cz(VHOD.z2 - 0.07)} width={(VHOD.x2 - VHOD.x1 - 0.14) * 100} height={(VHOD.z2 - VHOD.z1 - 0.1) * 100} fill="var(--p-vrata)" stroke="var(--p-crta)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
@@ -331,7 +350,7 @@ export default function Procelje() {
           })}
 
           {prostor === 'zunaj' && !prehod ? (() => {
-            const p = vOdstotkih((VHOD.x1 + VHOD.x2) / 2, 1.95, vb);
+            const p = vOdstotkih((VHOD.x1 + VHOD.x2) / 2, 3.12, vb);
             if (p.left < 0 || p.left > 100 || p.top < 0 || p.top > 100) return null;
             return (
               <button type="button" className={s.vstopi} style={{ left: `${p.left}%`, top: `${p.top}%` }} onClick={vstopi}>
@@ -339,11 +358,15 @@ export default function Procelje() {
               </button>
             );
           })() : null}
-          {prostor === 'notri' ? (
-            <button type="button" className={`gumb gumb--svetel gumb--mal ${s.nazaj}`} onClick={izstopi}>
-              <ArrowLeft size={16} weight="bold" aria-hidden /> Nazaj pred hišo
-            </button>
-          ) : null}
+          {prostor === 'notri' && !prehod ? (() => {
+            const p = vOdstotkih((VHOD.x1 + VHOD.x2) / 2 + 0.55, 2.1, vb);
+            if (p.left < 0 || p.left > 100 || p.top < 0 || p.top > 100) return null;
+            return (
+              <button type="button" className={s.vstopi} style={{ left: `${p.left}%`, top: `${p.top}%` }} onClick={izstopi}>
+                <DoorOpen size={18} weight="bold" aria-hidden /> <span className={s.dolgo}>Izstopite iz hiše</span><span className={s.kratko}>Ven</span>
+              </button>
+            );
+          })() : null}
 
           {priblizano ? (
             <button type="button" className={`gumb gumb--svetel gumb--mal ${s.cela}`} onClick={celaHisa}>

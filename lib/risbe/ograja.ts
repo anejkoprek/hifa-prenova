@@ -2,7 +2,7 @@
 // Vse mere so v metrih, s = merilo v px na meter.
 
 import { obl, oblikeSvg, type Vzorec } from '../vzorci';
-import { odsekiZarkov, type VzorecZarkov } from '../zarki';
+import { zarkiPolja, type VzorecZarkov } from '../zarki';
 
 export type TipOgraje = 'balkonska' | 'galerijska' | 'dvoriscna' | 'stopniscna-zunanja' | 'stopniscna-notranja';
 /** ograja na robu plošče: zunanji balkon ali notranja galerija (ista montaža z vrha ali s strani) */
@@ -182,7 +182,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
         const sw = Math.max(1.4, 0.012 * s);
         const visPolja = (bottomFn(xa) - topFn(xa)) / s;
         const seme = Number(key.replace(/\D/g, '')) || 0;
-        for (const [x1, v1, x2, v2] of odsekiZarkov(o.zarki ?? 'pokoncni', xb - xa, visPolja, razmik(0.13), seme)) {
+        for (const [x1, v1, x2, v2] of zarkiPolja(o.zarki ?? 'pokoncni', skupaj, xa, xb, visPolja, razmik(0.13), seme)) {
           g.push(`<line x1="${n(X(xa + x1))}" y1="${n(bottomFn(xa + x1) - v1 * s)}" x2="${n(X(xa + x2))}" y2="${n(bottomFn(xa + x2) - v2 * s)}" stroke="${barva}" stroke-width="${n(sw)}" stroke-linecap="round"/>`);
         }
         okvir = true;
