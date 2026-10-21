@@ -592,6 +592,9 @@ export default function Konfigurator() {
               </Korak>
 
               <Korak st={++st} naslov="Razporeditev" namig="Razmik med nosilnimi stebri in med vmesnimi letvicami. Pri balkonih in stopniščih sme biti razmik največ 10 cm, da ne more skozi otroška glava; ob izmeri preverimo, da ograja ustreza predpisom.">
+                {imaZakljucek(og.polnilo) && og.zakljucek === 'odprto' ? (
+                  <p className={`small muted ${s.opomba}`}>Pri odprtih palicah ni ločenih stebrov: vse palice so enako debele in vsaka je nosilna.</p>
+                ) : (
                 <Mera
                   oznaka="Razmik nosilnih stebrov"
                   vrednost={og.razmikStebrov}
@@ -602,6 +605,7 @@ export default function Konfigurator() {
                   gumb={0.1}
                   enota="m"
                 />
+                )}
                 {razmikPolnilaZaPolnilo[og.polnilo] ? (
                   <Mera
                     oznaka={razmikPolnilaZaPolnilo[og.polnilo]!.oznaka}

@@ -60,8 +60,9 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const stran = o.tip === 'balkonska' && o.montaza === 'stran';
   const podaljsek = stran ? Math.min(Math.max(o.podaljsek ?? 0, 0), 40) / 100 : 0;
   // s strani: spodnji rob poravnan s tlemi (0) ali nižje čez čelo plošče
-  const clearance = stran ? -podaljsek : dvorisce ? 0.05 : 0.06;
+  // odprte palice: brez stebrov in spodnje letve, vse palice enake in sidrane posebej (od tal oz. plošče)
   const odprte = (o.polnilo === 'palicna' || o.polnilo === 'vertikalne') && o.zakljucek === 'odprto';
+  const clearance = stran ? -podaljsek : odprte ? 0 : dvorisce ? 0.05 : 0.06;
   const brezStebrov = stran && !!o.brezStebrickov;
   const razmik = (privzeto: number) => (o.razmikPolnila && o.razmikPolnila > 0 ? o.razmikPolnila / 100 : privzeto);
   const hm = visina - clearance;
@@ -150,13 +151,15 @@ export function risiOgrajo(o: OgrajaOpts): string {
     const slope = (bottomFn(xb) - bottomFn(xa)) / Math.max(xb - xa, 0.001);
     switch (o.polnilo) {
       case 'palicna': {
-        const bw = Math.max(2, 0.03 * s);
-        for (let x = xa + 0.06; x < xb - 0.02; x += 0.03 + razmik(0.09)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.6"/>`);
+        const pb = odprte ? 0.04 : 0.03; // proste palice so kvadratne cevi 40 × 40
+        const bw = Math.max(2, pb * s);
+        for (let x = xa + (odprte ? 0.04 : 0.06); x < xb - 0.02; x += pb + razmik(0.09)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.6"/>`);
         break;
       }
       case 'vertikalne': {
-        const bw = Math.max(1.6, 0.03 * s);
-        for (let x = xa + 0.04; x < xb - 0.02; x += 0.03 + razmik(0.025)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.5"/>`);
+        const pb = odprte ? 0.04 : 0.03;
+        const bw = Math.max(1.6, pb * s);
+        for (let x = xa + 0.04; x < xb - 0.02; x += pb + razmik(0.025)) g.push(`<rect x="${n(X(x) - bw / 2)}" y="${n(minY - 2)}" width="${n(bw)}" height="${n(maxY - minY + 4)}" fill="${barva}" stroke="${edge}" stroke-width="0.5"/>`);
         if (!odprte) okvir = true; // odprte letvice: brez okvirja zgoraj
         break;
       }
@@ -226,8 +229,14 @@ export function risiOgrajo(o: OgrajaOpts): string {
 
   // polnila med stebri
   const meje = prekinjeno ? [...posts, Ls] : posts;
-  for (let i = 0; i < meje.length - 1; i++) {
-    polnilo(meje[i] + pw / 2, meje[i + 1] - (i === meje.length - 2 && prekinjeno ? 0 : pw / 2), Yb, Yt, `p${i}`);
+  if (odprte) {
+    // ena neprekinjena vrsta enakih palic (na stopnišču ločeno ob stopnicah in na podestu)
+    const odseki: [number, number][] = P > 0.05 ? [[0, Ls], [Ls, Ls + P]] : [[0, Ls]];
+    odseki.forEach(([a, b], i) => polnilo(a, b, Yb, Yt, `p${i}`));
+  } else {
+    for (let i = 0; i < meje.length - 1; i++) {
+      polnilo(meje[i] + pw / 2, meje[i + 1] - (i === meje.length - 2 && prekinjeno ? 0 : pw / 2), Yb, Yt, `p${i}`);
+    }
   }
 
   // spodnji in zgornji profil
@@ -238,7 +247,9 @@ export function risiOgrajo(o: OgrajaOpts): string {
       parts.push(`<polygon class="${cls}" points="${poly(pts)}" fill="${barva}" stroke="${edge}" stroke-width="0.7"/>`);
     }
   };
-  if (o.polnilo !== 'steklo') rail((x) => Yb(x) - 0.04 * s, 0.04);
+  if (odprte) {
+    // brez spodnje letve
+  } else if (o.polnilo !== 'steklo') rail((x) => Yb(x) - 0.04 * s, 0.04);
   else rail((x) => Yb(x) - 0.03 * s, 0.03);
   if (odprte) {
     // odprte palice: brez ročaja, palice povezuje vodoravna šipka
@@ -262,7 +273,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   }
 
   // stebri
-  for (const x of brezStebrov ? [] : posts) {
+  for (const x of brezStebrov || odprte ? [] : posts) {
     const top = balkonSlog ? Yt(x) - 0.012 * s : Yt(x) - 0.01 * s;
     let bottom = stopnice ? Yb(x) + clearance * s : Fy;
     if (stran) bottom = Math.max(Fy + 0.17 * s, Yb(x) + 0.02 * s);

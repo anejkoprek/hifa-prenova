@@ -178,6 +178,10 @@ export type OpcijeOgraje = {
   zarki?: VzorecZarkov;
   /** zaporedna številka polja (za raznolike, a ponovljive žarke) */
   seme?: number;
+  /** odprte palice brez stebrov: vse palice enake (kvadratna cev), vsaka sidrana posebej, brez spodnje letve */
+  proste?: boolean;
+  /** koliko palice segajo pod dno polja (sidranje v ploščo), m */
+  podaljsaj?: number;
 };
 
 export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Materiali, op: OpcijeOgraje = {}) {
@@ -190,12 +194,13 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
   const odprte = (polnilo === 'palicna' || polnilo === 'vertikalne') && !!op.odprte;
   const razmik = (privzeto: number) => (op.razmik && op.razmik > 0 ? op.razmik : privzeto);
 
-  if (polnilo !== 'horizontalne') {
+  if (polnilo !== 'horizontalne' && !op.proste) {
     // okvir polja (pri odprtih palicah brez zgornjega profila)
     if (!odprte) g.add(palica(0, h - okvir / 2, L, r + h - okvir / 2, okvir, polnilo === 'palicna' ? 0.06 : 0.05, M.kovina));
     g.add(palica(0, okvir / 2 + dno, L, r + okvir / 2 + dno, okvir, 0.04, M.kovina));
   }
-  const notri = { y0: dno + okvir, y1: odprte ? h : h - okvir }; // prostor za polnilo
+  // prostor za polnilo; proste palice gredo od tal (oz. iz plošče) do vrha
+  const notri = op.proste ? { y0: -(op.podaljsaj ?? 0), y1: h } : { y0: dno + okvir, y1: odprte ? h : h - okvir };
   if (odprte) {
     // čisto tanka okrogla šipka skozi palice, da ostanejo poravnane
     const ys = Math.min(Math.max(op.sipka ?? h - 0.12, notri.y0 + 0.1), h - 0.06);
@@ -207,8 +212,10 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
   }
 
   if (polnilo === 'vertikalne' || polnilo === 'palicna') {
-    const korak = 0.03 + (polnilo === 'vertikalne' ? razmik(0.025) : razmik(0.09));
-    const [a, b] = polnilo === 'vertikalne' ? [0.03, 0.01] : [0.03, 0.05];
+    // proste palice: vse enake kvadratne cevi 40 × 40, nosilna je vsaka palica
+    const a = op.proste ? 0.04 : 0.03;
+    const b = op.proste ? 0.04 : polnilo === 'vertikalne' ? 0.01 : 0.05;
+    const korak = a + (polnilo === 'vertikalne' ? razmik(0.025) : razmik(0.09));
     const seg: [number, number, number, number][] = [];
     const n = Math.max(1, Math.floor((L - 0.04) / korak));
     const zamik = (L - (n - 1) * korak) / 2;
@@ -274,6 +281,11 @@ const steber = (x: number, y0: number, visina: number, M: Materiali, z = 0, prer
  */
 function ograjaVzdolz(L: number, h: number, polnilo: Polnilo, M: Materiali, r = 0, podStebrom = 0, op: OpcijeOgraje = {}) {
   const g = new THREE.Group();
+  if ((polnilo === 'palicna' || polnilo === 'vertikalne') && op.odprte) {
+    // odprte palice: brez ločenih stebrov in spodnje letve, vse palice enake in sidrane posebej
+    g.add(polje(L, h + 0.02, r, polnilo, M, { ...op, proste: true, podaljsaj: podStebrom }));
+    return g;
+  }
   const n = Math.max(1, Math.ceil(L / (op.razmikStebrov ?? 1.8) - 1e-6));
   const d = L / n;
   if (op.brezStebrov) {

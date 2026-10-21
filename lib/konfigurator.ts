@@ -91,7 +91,7 @@ export const razmikPolnilaZaPolnilo: Partial<Record<Polnilo, { min: number; max:
 
 export const zakljucki: { id: Zakljucek; naziv: string; opis: string }[] = [
   { id: 'rocaj', naziv: 'Z zgornjo letvijo', opis: 'Vodoravna letev pokrije palice zgoraj' },
-  { id: 'odprto', naziv: 'Odprte navzgor', opis: 'Brez zgornje letve, palice povezuje tanka šipka' },
+  { id: 'odprto', naziv: 'Odprte navzgor', opis: 'Brez zgornje letve in stebrov: enake palice, zgoraj tanka šipka' },
 ];
 /** polnila, pri katerih lahko palice zgoraj ostanejo odprte */
 export const imaZakljucek = (p: Polnilo) => p === 'palicna' || p === 'vertikalne';
@@ -360,7 +360,8 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
       : `Dolžina ${m(o.dolzina)}, višina ${o.visina} cm`,
     `Material: ${naziv(materiali, o.material).toLowerCase()}, ${ralTekst(o.ral)}`,
   ];
-  vrstice.push(`Razmik nosilnih stebrov: ${m(o.razmikStebrov)}`);
+  const proste = imaZakljucek(o.polnilo) && o.zakljucek === 'odprto';
+  vrstice.push(proste ? 'Brez ločenih stebrov, vse palice enake (kvadratna cev) in nosilne' : `Razmik nosilnih stebrov: ${m(o.razmikStebrov)}`);
   const rp = razmikPolnilaZaPolnilo[o.polnilo];
   if (rp) vrstice.push(`${rp.oznaka}: ${o.razmikPolnila.toLocaleString('sl-SI')} cm`);
   if (imaZakljucek(o.polnilo)) {
