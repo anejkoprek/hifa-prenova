@@ -63,24 +63,54 @@
 }
 
 /* ---------- mnenja ---------- */
-.mnenjaMreza { display: grid; gap: 2.5rem; }
-.mnenje { display: grid; gap: 1rem; align-content: start; }
-.mnenje blockquote p { font-size: var(--step-1); line-height: 1.45; }
-.mnenje figcaption { font-size: var(--step--1); color: var(--jeklo); }
-.mnenje figcaption strong { color: var(--crnilo); font-weight: 680; }
-.glavno blockquote p {
-  font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.9rem);
-  font-stretch: 108%;
-  font-weight: 620;
-  letter-spacing: -0.02em;
-  line-height: 1.14;
-  text-wrap: balance;
+.oznaka { color: var(--zelena-temna); }
+.mnenjaGlava > .h2 { max-width: 20ch; text-wrap: balance; }
+.mnenjaMreza { display: grid; gap: 1rem; }
+.mnenje {
+  display: flex; flex-direction: column; gap: 1.1rem;
+  margin: 0;
+  padding: clamp(1.4rem, 1.1rem + 1vw, 2rem);
+  background: var(--bela);
+  border: 1px solid var(--crta);
+  border-radius: var(--r-media);
 }
-.narekovaj { color: var(--zelena); }
-.stranska { display: grid; gap: 2rem; align-content: start; }
-.stranska .mnenje { padding-top: 1.4rem; border-top: 1px solid var(--crta-mocna); }
+.mnenje blockquote { margin: 0; flex: 1; }
+.mnenje blockquote p { font-size: var(--step-0); line-height: 1.55; color: var(--crnilo-2); }
+.narekovaj { color: var(--zelena); flex: none; }
+.glavno { background: var(--antracit); border-color: var(--antracit); color: var(--na-antracitu); }
+.glavno blockquote p {
+  color: var(--na-antracitu);
+  font-size: clamp(1.25rem, 1.05rem + 0.8vw, 1.7rem);
+  font-stretch: 106%;
+  font-weight: 560;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+.podpis { display: flex; align-items: center; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--crta); }
+.glavno .podpis { border-color: rgb(238 240 236 / 0.18); }
+.podpis > span:last-child { display: grid; gap: 0.1rem; }
+.podpis strong { font-weight: 700; }
+.zacetnica {
+  display: grid; place-items: center; flex: none;
+  width: 2.5rem; height: 2.5rem; border-radius: 50%;
+  background: var(--zelena); color: var(--na-zeleni);
+  font-weight: 740;
+}
+.tema { display: block; font-size: var(--step--1); color: var(--jeklo); }
+.tema::first-letter { text-transform: uppercase; }
+.glavno .tema { color: var(--na-antracitu-2); }
+@media (hover: hover) and (pointer: fine) {
+  .mnenje:not(.glavno):hover { border-color: var(--crta-mocna); }
+}
+@media (min-width: 760px) {
+  .mnenjaMreza { grid-template-columns: 1fr 1fr; }
+  .glavno { grid-column: 1 / -1; }
+}
 @media (min-width: 1000px) {
-  .mnenjaMreza { grid-template-columns: 1.7fr 1fr; gap: 5rem; }
+  .mnenjaMreza { grid-template-columns: 1.6fr 1fr; grid-template-rows: auto auto; }
+  .glavno { grid-column: 1; grid-row: 1 / 3; padding: 2.6rem; }
+  .glavno blockquote p { font-size: clamp(1.6rem, 1rem + 1.1vw, 2.1rem); line-height: 1.24; }
 }
 
 /* ---------- trak ---------- */

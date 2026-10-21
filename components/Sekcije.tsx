@@ -33,24 +33,36 @@ export function Postopek({ naslov = 'Od fotografije do montaže' }: { naslov?: s
 
 export function Mnenja() {
   const [glavno, ...ostala] = mnenja;
+  const Podpis = ({ m }: { m: (typeof mnenja)[number] }) => (
+    <figcaption className={s.podpis}>
+      <span className={s.zacetnica} aria-hidden>{m.ime[0]}</span>
+      <span>
+        <strong>{m.ime}</strong>
+        <span className={s.tema}>{m.tema}</span>
+      </span>
+    </figcaption>
+  );
   return (
     <section className={`sekcija ${s.mnenja}`} aria-labelledby="mnenja-h">
       <div className="wrap">
-        <h2 className="visually-hidden" id="mnenja-h">Mnenja strank</h2>
+        <div className={`${s.glavaSekcije} ${s.mnenjaGlava}`}>
+          <p className={`napis ${s.oznaka}`}>Mnenja strank</p>
+          <h2 className="h2" id="mnenja-h">Zadovoljne stranke so naša najboljša referenca</h2>
+          <p className="lead">Nekaj besed strank po zaključeni montaži, zapisanih tako, kot so nam jih poslale.</p>
+        </div>
         <div className={s.mnenjaMreza}>
           <figure className={`${s.mnenje} ${s.glavno} razkrij`}>
-            <Quotes size={44} weight="fill" aria-hidden className={s.narekovaj} />
+            <Quotes size={40} weight="fill" aria-hidden className={s.narekovaj} />
             <blockquote><p>{glavno.besedilo}</p></blockquote>
-            <figcaption><strong>{glavno.ime}</strong> · {glavno.tema}</figcaption>
+            <Podpis m={glavno} />
           </figure>
-          <div className={s.stranska}>
-            {ostala.map((m) => (
-              <figure key={m.ime} className={`${s.mnenje} razkrij`}>
-                <blockquote><p>{m.besedilo}</p></blockquote>
-                <figcaption><strong>{m.ime}</strong> · {m.tema}</figcaption>
-              </figure>
-            ))}
-          </div>
+          {ostala.map((m, i) => (
+            <figure key={m.ime} className={`${s.mnenje} razkrij`} style={{ transitionDelay: `${(i + 1) * 80}ms` }}>
+              <Quotes size={26} weight="fill" aria-hidden className={s.narekovaj} />
+              <blockquote><p>{m.besedilo}</p></blockquote>
+              <Podpis m={m} />
+            </figure>
+          ))}
         </div>
       </div>
     </section>
