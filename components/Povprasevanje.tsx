@@ -31,6 +31,8 @@ const izDela: Record<DelId, (typeof IZDELKI)[number][]> = {
   B: ['Nadstrešek'],
   C: ['Stopnišče', 'Ograja'],
   D: ['Ograja', 'Dvoriščna vrata'],
+  E: ['Stopnišče', 'Ograja'],
+  F: ['Ograja'],
 };
 
 /** Fotografije s telefona zmanjša na 2000 px, da se pošiljanje ne vleče po mobilnem omrežju. */

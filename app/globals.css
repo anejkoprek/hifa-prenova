@@ -72,6 +72,13 @@
   --p-vrata: #52575a;
   --p-steklo: rgb(120 165 180 / 0.34);
   --p-odsev: rgb(255 255 255 / 0.78);
+  /* notranjost hiše */
+  --p-notri: #efece5;
+  --p-notri-2: #e4e0d6;
+  --p-parket: #c7a57a;
+  --p-les: #a97f52;
+  --p-prerez: #5d6265;
+  --p-svetloba: #fff4d6;
 
   /* tehnične risbe v konfiguratorju */
   --draw-bg: #f4f5f1;

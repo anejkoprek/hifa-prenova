@@ -1,4 +1,4 @@
-// 3D modeli za konfigurator: ograje (balkonska, dvoriščna z vrati, zunanja in notranja stopniščna) in nadstreški.
+// 3D modeli za konfigurator: ograje (balkonska, galerijska, dvoriščna z vrati, zunanja in notranja stopniščna) in nadstreški.
 // Vse mere so v metrih, os y kaže navzgor. Funkcije sprejmejo isto stanje kot 2D risba, zato se oba pogleda vedno ujemata.
 import * as THREE from 'three';
 import type { OgrajaStanje, NadstresekStanje } from './konfigurator';
@@ -354,13 +354,35 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     sipka: Math.min(Math.max(o.sipka, o.visina / 2), o.visina - 8) / 100,
   };
 
-  if (o.tip === 'balkonska') {
-    // fasada s ploščo balkona v nadstropju; ograja na robu plošče
+  if (o.tip === 'balkonska' || o.tip === 'galerijska') {
+    // fasada s ploščo balkona v nadstropju; ograja na robu plošče.
+    // Galerija: ista zasnova v notranjosti hiše (stena, plošča s parketom, vrata v sobe, spodaj dnevni prostor).
+    const galerija = o.tip === 'galerijska';
     const L = o.dolzina;
     const yPlosce = 2.9;
-    const globina = 1.6;
+    const globina = galerija ? 2.2 : 1.6;
     g.add(skatla(L + 1.2, 6.0, 0.3, M.fasada, L / 2, 3.0, -0.15));
-    g.add(skatla(L + 0.3, 0.2, globina, M.beton, L / 2, yPlosce - 0.1, globina / 2));
+    g.add(skatla(L + 0.3, 0.2, globina, galerija ? M.fasada : M.beton, L / 2, yPlosce - 0.1, globina / 2));
+    if (galerija) {
+      g.add(skatla(L + 0.3, 0.02, globina, M.parket, L / 2, yPlosce + 0.01, globina / 2));
+      // vrata v sobe ob galeriji in velika steklena stena v dnevnem prostoru spodaj
+      const nVrat = Math.max(1, Math.floor(L / 3.2));
+      for (let i = 0; i < nVrat; i++) {
+        const x = ((i + 0.5) * L) / nVrat;
+        g.add(skatla(0.95, 2.1, 0.04, M.les, x, yPlosce + 1.05, 0.02));
+        g.add(skatla(0.04, 0.04, 0.03, M.kovina, x + 0.36, yPlosce + 1.05, 0.06));
+      }
+      const sp = okno(Math.min(L * 0.7, 6), 2.4, M);
+      sp.position.set(L / 2, 1.3, 0.03);
+      g.add(sp);
+      const ograja = o.montaza === 'stran'
+        ? ograjaVzdolz(L, h + Math.max(0, o.podaljsek) / 100, o.polnilo, M, 0, o.brezStebrickov ? 0 : Math.max(0, 0.16 - Math.max(0, o.podaljsek) / 100), { ...op, dno: 0, brezStebrov: o.brezStebrickov, sipka: (op.sipka ?? h / 2) + Math.max(0, o.podaljsek) / 100 })
+        : ograjaVzdolz(L, h, o.polnilo, M, 0, 0, op);
+      ograja.position.set(0, yPlosce - (o.montaza === 'stran' ? Math.max(0, o.podaljsek) / 100 : 0), globina + (o.montaza === 'stran' ? 0.045 : -0.08));
+      g.add(ograja);
+      if (o.montaza === 'stran') g.add(skatla(L + 0.04, 0.2, 0.012, M.kovina, L / 2, yPlosce - 0.1, globina + 0.006));
+      return { skupina: g, sredisce: new THREE.Vector3(L / 2, yPlosce, globina / 2), velikost: Math.max(L, 5), podlaga: 'parket' };
+    }
     // okna in balkonska vrata v nadstropju, okna v pritličju
     const nOken = Math.max(1, Math.floor(L / 2.6));
     for (let i = 0; i < nOken; i++) {

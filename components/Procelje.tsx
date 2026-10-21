@@ -2,10 +2,14 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ArrowsOut, Phone, SlidersHorizontal } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, ArrowsOut, DoorOpen, Phone, SlidersHorizontal } from '@phosphor-icons/react';
 import {
   risiProcelje,
+  risiNotranjost,
   izbor,
+  NOTRI,
+  VHOD,
+  ZUNAJ,
   obmocja,
   oznake,
   okvirDela,
@@ -23,7 +27,12 @@ import PolniloIkona from './PolniloIkona';
 import s from './Procelje.module.css';
 
 type Vb = { x: number; y: number; w: number; h: number };
-const IDS: DelId[] = ['A', 'B', 'C', 'D'];
+type Prostor = 'zunaj' | 'notri';
+/** faze vstopa: približanje vratom, odpiranje vrat, nato notranjost na istem mestu */
+type Prehod = null | 'vrata' | 'odpira';
+const brezGibanja = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cm = (x: number) => (x + 0.9) * 100;
+const cz = (z: number) => (9.5 - z) * 100;
 const ozkiZaslon = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches;
 
 type Kode = {
@@ -31,6 +40,8 @@ type Kode = {
   B: { oblika: ProceljeIzbira['B']['oblika']; ral: string };
   C: { polnilo: ProceljeIzbira['C']['polnilo']; ral: string };
   D: { polnilo: ProceljeIzbira['D']['polnilo']; vrata: ProceljeIzbira['D']['vrata']; ral: string };
+  E: { polnilo: ProceljeIzbira['E']['polnilo']; ral: string };
+  F: { polnilo: ProceljeIzbira['F']['polnilo']; ral: string };
 };
 
 const zacetek: Kode = {
@@ -38,10 +49,15 @@ const zacetek: Kode = {
   B: { oblika: privzetaIzbira.B.oblika, ral: '7016' },
   C: { polnilo: privzetaIzbira.C.polnilo, ral: '7016' },
   D: { polnilo: privzetaIzbira.D.polnilo, vrata: privzetaIzbira.D.vrata, ral: '7016' },
+  E: { polnilo: privzetaIzbira.E.polnilo, ral: '9005' },
+  F: { polnilo: privzetaIzbira.F.polnilo, ral: '9005' },
 };
 
 export default function Procelje() {
   const [izbran, setIzbran] = useState<DelId>('A');
+  const [prostor, setProstor] = useState<Prostor>('zunaj');
+  const [prehod, setPrehod] = useState<Prehod>(null);
+  const casovniki = useRef<number[]>([]);
   const [lebdi, setLebdi] = useState<DelId | null>(null);
   const [kode, setKode] = useState<Kode>(zacetek);
   // dokler obiskovalec ne izbere dela, oznake A–D rahlo utripajo kot povabilo h kliku
@@ -68,21 +84,23 @@ export default function Procelje() {
       B: { oblika: kode.B.oblika, ral: ralHex(kode.B.ral) },
       C: { polnilo: kode.C.polnilo, ral: ralHex(kode.C.ral) },
       D: { polnilo: kode.D.polnilo, vrata: kode.D.vrata, ral: ralHex(kode.D.ral) },
+      E: { polnilo: kode.E.polnilo, ral: ralHex(kode.E.ral) },
+      F: { polnilo: kode.F.polnilo, ral: ralHex(kode.F.ral) },
     }),
     [kode],
   );
-  const svg = useMemo(() => risiProcelje(izbira), [izbira]);
+  const svg = useMemo(() => (prostor === 'notri' ? risiNotranjost(izbira) : risiProcelje(izbira)), [izbira, prostor]);
+  const IDS = prostor === 'notri' ? NOTRI : ZUNAJ;
 
   // gladek prehod viewBoxa (približanje dela na telefonu)
-  const premakni = useCallback((cilj: Vb) => {
+  const premakni = useCallback((cilj: Vb, T = 520) => {
     cancelAnimationFrame(anim.current);
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (brezGibanja()) {
       setVb(cilj);
       return;
     }
     let od: Vb | null = null;
     const t0 = performance.now();
-    const T = 520;
     const korak = (t: number) => {
       setVb((trenutni) => {
         od ??= trenutni;
@@ -96,6 +114,7 @@ export default function Procelje() {
         };
       });
       if (t - t0 < T) anim.current = requestAnimationFrame(korak);
+      else setVb(cilj);
     };
     anim.current = requestAnimationFrame(korak);
   }, []);
@@ -116,6 +135,50 @@ export default function Procelje() {
   const celaHisa = () => {
     setPriblizano(false);
     premakni(osnova);
+  };
+
+  const pocakaj = (ms: number, fn: () => void) => casovniki.current.push(window.setTimeout(fn, ms));
+  useEffect(() => () => casovniki.current.forEach(clearTimeout), []);
+
+  // vstop v hišo: približamo se vratom, vrata se odprejo, na istem mestu se pokaže notranjost
+  const vstopi = () => {
+    if (prehod) return;
+    setNamig(false);
+    setPriblizano(false);
+    const razmerje = osnova.w / osnova.h;
+    const priVratih = okvirDela('vhod', razmerje, 0.55);
+    if (brezGibanja()) {
+      setProstor('notri');
+      setIzbran('E');
+      setVb(osnova);
+      return;
+    }
+    setPrehod('vrata');
+    premakni(priVratih, 750);
+    pocakaj(800, () => setPrehod('odpira'));
+    // skozi odprta vrata: še bližje, v toplo svetlobo
+    pocakaj(1350, () => premakni(okvirDela('vhod', razmerje, 0.02), 450));
+    pocakaj(1800, () => {
+      setProstor('notri');
+      setIzbran('E');
+      setRisano((n) => n + 1);
+      setPrehod(null);
+      setVb(priVratih);
+      premakni(osnova, 950);
+    });
+  };
+
+  const izstopi = () => {
+    if (prehod) return;
+    setProstor('zunaj');
+    setIzbran('A');
+    setRisano((n) => n + 1);
+    if (brezGibanja()) {
+      setVb(osnova);
+      return;
+    }
+    setVb(okvirDela('vhod', osnova.w / osnova.h, 0.55));
+    premakni(osnova, 850);
   };
 
   useEffect(() => {
@@ -146,13 +209,15 @@ export default function Procelje() {
   const viewBox = `${vb.x} ${vb.y} ${vb.w} ${vb.h}`;
 
   return (
-    <section id="oblikuj" className={s.hero} aria-labelledby="hero-naslov" data-namig={namig || undefined}>
+    <section id="oblikuj" className={s.hero} aria-labelledby="hero-naslov" data-namig={namig || undefined} data-prehod={prehod || undefined}>
       <div className={s.list}>
         <div className={s.scena}>
         <div className={s.uvod}>
-          <h2 id="hero-naslov" className={`display ${s.naslov}`}>Oblikujte svojo hišo</h2>
+          <h2 id="hero-naslov" className={`display ${s.naslov}`}>{prostor === 'notri' ? 'Notranjost hiše' : 'Oblikujte svojo hišo'}</h2>
           <p className={s.lead}>
-            Kliknite balkon, nadstrešek, stopnišče ali dvoriščno ograjo ter izberite polnilo, obliko in barvo.
+            {prostor === 'notri'
+              ? 'Ograja ob notranjem stopnišču in zgornji etaži ter ograja galerije. Izberite polnilo in barvo.'
+              : 'Kliknite balkon, nadstrešek, stopnišče ali dvoriščno ograjo ter izberite polnilo, obliko in barvo. Skozi vhodna vrata vstopite v hišo.'}
           </p>
           <p className={s.namig}>
             <SlidersHorizontal size={18} weight="bold" aria-hidden />
@@ -165,10 +230,21 @@ export default function Procelje() {
             viewBox={viewBox}
             className={s.svg}
             role="img"
-            aria-label={`Pročelje hiše z izdelki HIFA. Izbrano: ${del.naziv}.`}
+            aria-label={`${prostor === 'notri' ? 'Notranjost hiše' : 'Pročelje hiše'} z izdelki HIFA. Izbrano: ${del.naziv}.`}
             preserveAspectRatio="xMidYMid meet"
           >
-            <g dangerouslySetInnerHTML={{ __html: svg }} />
+            <g key={prostor} className={s.prostor} dangerouslySetInnerHTML={{ __html: svg }} />
+            {/* vrata med vstopom: za njimi topla svetloba, krilo se odpre navznoter */}
+            {prehod ? (
+              <g className={s.vhod} data-odprto={prehod === 'odpira' || undefined} aria-hidden>
+                <rect x={cm(VHOD.x1 + 0.07)} y={cz(VHOD.z2 - 0.07)} width={(VHOD.x2 - VHOD.x1 - 0.14) * 100} height={(VHOD.z2 - VHOD.z1 - 0.1) * 100} className={s.vhodLuc} />
+                <g className={s.krilo}>
+                  <rect x={cm(VHOD.x1 + 0.07)} y={cz(VHOD.z2 - 0.07)} width={(VHOD.x2 - VHOD.x1 - 0.14) * 100} height={(VHOD.z2 - VHOD.z1 - 0.1) * 100} fill="var(--p-vrata)" stroke="var(--p-crta)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+                  <rect x={cm(8.78)} y={cz(2.6)} width={20} height={160} fill="var(--p-okno)" />
+                  <rect x={cm(9.45)} y={cz(2.05)} width={5} height={50} fill="var(--p-crta)" />
+                </g>
+              </g>
+            ) : null}
             {/* kazalne črte do oznak */}
             {IDS.map((id) => {
               const o = id === 'B' && (kode.B as { oblika?: string }).oblika === 'enokapnica' ? { ...oznake.B, tz: 2.93 } : oznake[id];
@@ -199,7 +275,7 @@ export default function Procelje() {
               return <path d={b.koti} className={s.izborLebdi} strokeWidth={(2 * vb.w) / sirina} />;
             })() : null}
             {/* zadetki za miško in prst */}
-            {(['B', 'A', 'C', 'D'] as DelId[]).map((id) => {
+            {(prostor === 'notri' ? NOTRI : (['B', 'A', 'C', 'D'] as DelId[])).map((id) => {
               const o = obmocja[id];
               return (
                 <rect
@@ -216,9 +292,20 @@ export default function Procelje() {
                 />
               );
             })}
+            {prostor === 'zunaj' && !prehod ? (
+              <rect
+                x={cm(VHOD.x1)}
+                y={cz(VHOD.z2)}
+                width={(VHOD.x2 - VHOD.x1) * 100}
+                height={(VHOD.z2 - 1.9) * 100}
+                className={s.zadetek}
+                onClick={vstopi}
+                aria-hidden
+              />
+            ) : null}
           </svg>
 
-          {IDS.map((id) => {
+          {prehod ? null : IDS.map((id) => {
             const o = id === 'B' && (kode.B as { oblika?: string }).oblika === 'enokapnica' ? { ...oznake.B, tz: 2.93 } : oznake[id];
             const p = vOdstotkih(o.x, o.z, vb);
             if (p.left < -2 || p.left > 102 || p.top < -2 || p.top > 102) return null;
@@ -242,6 +329,21 @@ export default function Procelje() {
               </button>
             );
           })}
+
+          {prostor === 'zunaj' && !prehod ? (() => {
+            const p = vOdstotkih((VHOD.x1 + VHOD.x2) / 2, 1.95, vb);
+            if (p.left < 0 || p.left > 100 || p.top < 0 || p.top > 100) return null;
+            return (
+              <button type="button" className={s.vstopi} style={{ left: `${p.left}%`, top: `${p.top}%` }} onClick={vstopi}>
+                <DoorOpen size={18} weight="bold" aria-hidden /> <span className={s.dolgo}>Vstopite v hišo</span><span className={s.kratko}>Vstopi</span>
+              </button>
+            );
+          })() : null}
+          {prostor === 'notri' ? (
+            <button type="button" className={`gumb gumb--svetel gumb--mal ${s.nazaj}`} onClick={izstopi}>
+              <ArrowLeft size={16} weight="bold" aria-hidden /> Nazaj pred hišo
+            </button>
+          ) : null}
 
           {priblizano ? (
             <button type="button" className={`gumb gumb--svetel gumb--mal ${s.cela}`} onClick={celaHisa}>
@@ -268,6 +370,17 @@ export default function Procelje() {
                 <span>{deli[id].kratko}</span>
               </button>
             ))}
+            {prostor === 'zunaj' ? (
+              <button type="button" className={s.zavihek} onClick={vstopi}>
+                <span className={`detajl ${s.zavihekVrata}`} aria-hidden><DoorOpen size={18} weight="bold" /></span>
+                <span>Notranjost</span>
+              </button>
+            ) : (
+              <button type="button" className={s.zavihek} onClick={izstopi}>
+                <span className={`detajl ${s.zavihekVrata}`} aria-hidden><ArrowLeft size={18} weight="bold" /></span>
+                <span>Pred hišo</span>
+              </button>
+            )}
           </div>
 
           <div className={s.celica + ' ' + s.opisCelica}>

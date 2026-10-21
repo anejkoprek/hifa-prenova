@@ -1,9 +1,12 @@
 // Pročelje družinske hiše v merilu (SVG kot niz).
 // Vse mere so v metrih, viewBox je v centimetrih: x = (m + X0) * 100, y = (ZTOP - z) * 100.
 // Štirje deli so izdelki HIFA in se rišejo iz izbir: A balkonska ograja, B nadstrešek,
-// C stopnišče z ograjo, D dvoriščna ograja z vrati.
+// C stopnišče z ograjo, D dvoriščna ograja z vrati. Za vhodnimi vrati je notranjost hiše (risiNotranjost)
+// z dvema deloma: E notranje stopnišče z ograjo ob zgornji etaži in F ograja galerije.
 
-export type DelId = 'A' | 'B' | 'C' | 'D';
+export type DelId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export const ZUNAJ: DelId[] = ['A', 'B', 'C', 'D'];
+export const NOTRI: DelId[] = ['E', 'F'];
 export type PolniloP = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana';
 export type OblikaNadstreska = 'box' | 'enokapnica';
 export type VrataP = 'drsna' | 'samonosna' | 'krilna';
@@ -13,6 +16,8 @@ export interface ProceljeIzbira {
   B: { oblika: OblikaNadstreska; ral: string };
   C: { polnilo: PolniloP; ral: string };
   D: { polnilo: PolniloP; vrata: VrataP; ral: string };
+  E: { polnilo: PolniloP; ral: string };
+  F: { polnilo: PolniloP; ral: string };
 }
 
 export const X0 = 0.9; // levi rob scene v m (scena se začne pri x = -0.9)
@@ -42,7 +47,12 @@ export const obmocja: Record<DelId, { x1: number; z1: number; x2: number; z2: nu
   B: { x1: 11.0, z1: 2.2, x2: 16.8, z2: 3.35 },
   C: { x1: 6.65, z1: -0.05, x2: 10.55, z2: 1.85 },
   D: { x1: 11.3, z1: -0.05, x2: 16.5, z2: 1.62 },
+  E: { x1: 4.55, z1: 0.68, x2: 10.7, z2: 4.62 },
+  F: { x1: 1.3, z1: 3.3, x2: 4.3, z2: 4.62 },
 };
+
+/** vhodna vrata: tu obiskovalec vstopi v hišo */
+export const VHOD = { x1: 8.55, z1: 0.68, x2: 9.75, z2: 2.95 };
 
 // Točke, kjer stojijo oznake detajlov (krog s črko) in kam kaže kazalna črta.
 export const oznake: Record<DelId, { x: number; z: number; tx: number; tz: number }> = {
@@ -50,6 +60,8 @@ export const oznake: Record<DelId, { x: number; z: number; tx: number; tz: numbe
   B: { x: 12.45, z: 3.62, tx: 13.4, tz: 2.72 },
   C: { x: 7.3, z: 2.8, tx: 7.35, tz: 1.15 },
   D: { x: 16.95, z: 2.0, tx: 15.9, tz: 1.2 },
+  E: { x: 12.1, z: 4.4, tx: 10.15, tz: 4.15 },
+  F: { x: -0.05, z: 5.0, tx: 1.6, tz: 4.2 },
 };
 
 /** Pretvori metre scene v odstotke viewBoxa (za HTML oznake čez SVG). */
@@ -58,9 +70,8 @@ export function vOdstotkih(x: number, z: number, vb = VIEWBOX) {
 }
 
 /** Okvir za približan pogled na del, v enotah viewBoxa, z danim razmerjem stranic. */
-export function okvirDela(id: DelId, razmerje: number) {
-  const o = obmocja[id];
-  const pad = 1.4;
+export function okvirDela(id: DelId | 'vhod', razmerje: number, pad = 1.4) {
+  const o = id === 'vhod' ? VHOD : obmocja[id];
   let x1 = X(o.x1 - pad), x2 = X(o.x2 + pad);
   let y1 = Y(o.z2 + pad), y2 = Y(o.z1 - 0.6);
   let w = x2 - x1, h = y2 - y1;
@@ -210,6 +221,22 @@ export function izbor(id: DelId, rob = 0.16) {
   return { x, y, w, h, koti };
 }
 
+function streha(o: string[], defs: string[]) {
+  // streha (štirikapnica v pogledu): trapez s kritino
+  const streha = [pt(0.35, 6.3), pt(11.65, 6.3), pt(8.45, 8.65), pt(3.55, 8.65)].join(' ');
+  // dimnik za strešino
+  o.push(`<polygon points="${[pt(8.9, 7.9), pt(8.9, 9.1), pt(9.45, 9.1), pt(9.45, 7.6)].join(' ')}" fill="var(--p-dimnik)" ${CRTA}/>`);
+  o.push(rect(8.82, 9.1, 9.53, 9.2, `fill="var(--p-okvir)" ${TANKA}`));
+  o.push(`<polygon points="${streha}" fill="var(--p-streha)" ${CRTA}/>`);
+  // strešniki kot vzorec (ena celica namesto stotin črt): vrste po 24 cm, zamik 17 cm
+  defs.push(
+    `<pattern id="p-stresniki" width="34" height="48" patternUnits="userSpaceOnUse" x="${X(0.4)}" y="${Y(6.55)}"><g stroke="var(--p-streha-crta)" fill="none"><path d="M0 0H34M0 24H34" stroke-width="1.3"/><path d="M0 0V24M17 24V48" stroke-width="0.9"/></g></pattern>`,
+  );
+  o.push(`<polygon points="${streha}" fill="url(#p-stresniki)"/>`);
+  o.push(rect(0.35, 6.12, 11.65, 6.3, `fill="var(--p-okvir)" ${CRTA}`)); // čelna deska / žleb
+
+}
+
 // ---------- glavna risba ----------
 export function risiProcelje(iz: ProceljeIzbira): string {
   const o: string[] = [];
@@ -223,18 +250,7 @@ export function risiProcelje(iz: ProceljeIzbira): string {
   o.push(line(-0.9, 0, 21.1, 0, `stroke="var(--p-crta)" stroke-width="2" ${L}`));
 
   // ---- hiša ----
-  // streha (štirikapnica v pogledu): trapez s kritino
-  const streha = [pt(0.35, 6.3), pt(11.65, 6.3), pt(8.45, 8.65), pt(3.55, 8.65)].join(' ');
-  // dimnik za strešino
-  o.push(`<polygon points="${[pt(8.9, 7.9), pt(8.9, 9.1), pt(9.45, 9.1), pt(9.45, 7.6)].join(' ')}" fill="var(--p-dimnik)" ${CRTA}/>`);
-  o.push(rect(8.82, 9.1, 9.53, 9.2, `fill="var(--p-okvir)" ${TANKA}`));
-  o.push(`<polygon points="${streha}" fill="var(--p-streha)" ${CRTA}/>`);
-  // strešniki kot vzorec (ena celica namesto stotin črt): vrste po 24 cm, zamik 17 cm
-  defs.push(
-    `<pattern id="p-stresniki" width="34" height="48" patternUnits="userSpaceOnUse" x="${X(0.4)}" y="${Y(6.55)}"><g stroke="var(--p-streha-crta)" fill="none"><path d="M0 0H34M0 24H34" stroke-width="1.3"/><path d="M0 0V24M17 24V48" stroke-width="0.9"/></g></pattern>`,
-  );
-  o.push(`<polygon points="${streha}" fill="url(#p-stresniki)"/>`);
-  o.push(rect(0.35, 6.12, 11.65, 6.3, `fill="var(--p-okvir)" ${CRTA}`)); // čelna deska / žleb
+  streha(o, defs);
 
   // zidovi
   o.push(rect(1.0, 0, 11.0, 6.12, `fill="var(--p-zid)" ${CRTA}`));
@@ -329,9 +345,127 @@ export function risiProcelje(iz: ProceljeIzbira): string {
   return `<defs>${defs.join('')}</defs>${o.join('')}`;
 }
 
+// ---------- notranjost hiše ----------
+/**
+ * Prerez hiše z odstranjeno sprednjo steno: isti obris kot pročelje, da se notranjost pokaže na istem mestu.
+ * Levo dvovišinski dnevni prostor z galerijo v nadstropju (F), desno stopnišče, ki se nadaljuje v ograjo
+ * ob zgornji etaži (E). Okolica (nadstrešek, dvoriščna ograja) ostane zbledela v ozadju.
+ */
+export function risiNotranjost(iz: ProceljeIzbira): string {
+  const o: string[] = [];
+  const defs: string[] = [];
+  const PRE = `stroke="var(--p-crta)" stroke-width="1.15" ${L}`;
+  defs.push(
+    `<pattern id="n-prerez" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="var(--p-prerez)"/><line x1="0" y1="0" x2="0" y2="9" stroke="var(--p-crta)" stroke-width="1.6"/></pattern>`,
+    `<pattern id="n-parket" width="60" height="6" patternUnits="userSpaceOnUse"><rect width="60" height="6" fill="var(--p-parket)"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--p-les)" stroke-width="1"/></pattern>`,
+    `<linearGradient id="n-luc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--p-svetloba)" stop-opacity="0.9"/><stop offset="1" stop-color="var(--p-svetloba)" stop-opacity="0"/></linearGradient>`,
+  );
+  const zT = 0.68; // tla pritličja
+  const zN = 3.55; // tla nadstropja
+  const zS = 6.12; // strop nadstropja
+
+  // okolica ostane na svojem mestu, a zbledi, da je v ospredju notranjost
+  o.push(`<g opacity="0.2">${risiProcelje(iz)}</g>`);
+  o.push(rect(0.9, -0.02, 11.1, zS + 0.05, `fill="var(--papir, #e8e9e5)"`));
+  streha(o, defs);
+
+  // stena v ozadju (notranja), malo toplejša od fasade
+  o.push(rect(1.0, 0, 11.0, zS, `fill="var(--p-notri)" ${CRTA}`));
+  // pod stropom galerije in nad stopniščem rahla senca, da prostor dobi globino
+  o.push(rect(1.25, zN - 0.2, 4.3, zN - 0.55, `fill="var(--p-notri-2)"`));
+
+  // ---- pritličje: velika steklena stena, kavč, rastlina; omare pod stopnicami ----
+  o.push(rect(1.55, zT, 4.05, 2.95, `fill="var(--p-okvir)" ${CRTA}`));
+  o.push(rect(1.63, zT + 0.05, 2.76, 2.87, `fill="var(--p-okno)" ${TANKA}`));
+  o.push(rect(2.84, zT + 0.05, 3.97, 2.87, `fill="var(--p-okno)" ${TANKA}`));
+  o.push(line(1.85, 1.2, 2.2, 2.6, `stroke="var(--p-odsev)" stroke-width="2" stroke-linecap="round" ${L}`));
+  o.push(line(3.05, 1.2, 3.4, 2.6, `stroke="var(--p-odsev)" stroke-width="2" stroke-linecap="round" ${L}`));
+  // kavč
+  o.push(rect(1.7, zT + 0.12, 3.9, zT + 0.48, `fill="var(--p-vrata)" ${TANKA}`));
+  o.push(rect(1.7, zT + 0.48, 3.9, zT + 0.9, `fill="var(--p-vrata)" ${TANKA} style="filter:brightness(1.15)"`));
+  o.push(rect(1.6, zT + 0.12, 1.78, zT + 0.62, `fill="var(--p-okvir)" ${TANKA}`));
+  o.push(rect(3.82, zT + 0.12, 4.0, zT + 0.62, `fill="var(--p-okvir)" ${TANKA}`));
+  for (const x of [1.85, 3.75]) o.push(rect(x - 0.02, zT, x + 0.02, zT + 0.12, `fill="var(--p-crta)"`));
+  // rastlina v loncu
+  o.push(`<path d="M ${X(4.3)} ${Y(zT)} L ${X(4.25)} ${Y(zT + 0.4)} L ${X(4.55)} ${Y(zT + 0.4)} L ${X(4.5)} ${Y(zT)} Z" fill="var(--p-polica)" ${TANKA}/>`);
+  for (const [dx, dz, w] of [[-0.18, 0.9, 0.12], [0.05, 1.15, 0.13], [0.22, 0.85, 0.11], [-0.05, 0.75, 0.1]] as const) {
+    o.push(`<ellipse cx="${X(4.4 + dx)}" cy="${Y(zT + dz)}" rx="${r(w * 100)}" ry="${r(w * 230)}" transform="rotate(${dx * 90} ${X(4.4 + dx)} ${Y(zT + dz)})" fill="#7f9a6a" ${TANKA}/>`);
+  }
+
+  // ---- dvovišinski prostor: visoko okno in viseča svetilka ----
+  o.push(rect(5.3, 3.95, 7.6, 5.6, `fill="var(--p-okvir)" ${CRTA}`));
+  // svetilka pod galerijo nad kavčem
+  o.push(line(2.8, zN - 0.2, 2.8, 2.75, `stroke="var(--p-crta)" stroke-width="0.8" ${L}`));
+  o.push(`<path d="M ${X(2.55)} ${Y(2.5)} L ${X(2.68)} ${Y(2.75)} L ${X(2.92)} ${Y(2.75)} L ${X(3.05)} ${Y(2.5)} Z" fill="var(--p-okvir)" ${TANKA}/>`);
+  o.push(rect(5.38, 4.03, 7.52, 5.52, `fill="var(--p-okno)" ${TANKA}`));
+  o.push(line(5.6, 4.3, 5.95, 5.3, `stroke="var(--p-odsev)" stroke-width="2" stroke-linecap="round" ${L}`));
+
+  // ---- nadstropje: plošča galerije levo in podest desno ----
+  o.push(rect(1.25, zN - 0.2, 4.3, zN, `fill="url(#n-prerez)" ${PRE}`));
+  o.push(rect(1.25, zN, 4.3, zN + 0.03, `fill="var(--p-parket)" ${TANKA}`));
+  o.push(rect(8.65, zN - 0.2, 10.75, zN, `fill="url(#n-prerez)" ${PRE}`));
+  o.push(rect(8.65, zN, 10.75, zN + 0.03, `fill="var(--p-parket)" ${TANKA}`));
+  // vrata v sobi na galeriji in na podestu
+  const vrata = (x1: number, x2: number) => {
+    o.push(rect(x1, zN + 0.03, x2, zN + 2.1, `fill="var(--p-polica)" ${CRTA}`));
+    o.push(rect(x1 + 0.05, zN + 0.03, x2 - 0.05, zN + 2.05, `fill="var(--p-les)" ${TANKA}`));
+    o.push(rect(x2 - 0.2, zN + 1.0, x2 - 0.1, zN + 1.04, `fill="var(--p-crta)"`));
+  };
+  vrata(1.75, 2.7);
+  vrata(9.5, 10.4);
+  // slika na steni galerije
+  o.push(rect(3.05, zN + 1.05, 3.95, zN + 1.75, `fill="var(--p-okvir)" ${TANKA}`));
+  o.push(rect(3.1, zN + 1.1, 3.9, zN + 1.7, `fill="#c9b79a" ${TANKA}`));
+  o.push(`<path d="M ${X(3.1)} ${Y(zN + 1.1)} L ${X(3.4)} ${Y(zN + 1.45)} L ${X(3.6)} ${Y(zN + 1.28)} L ${X(3.9)} ${Y(zN + 1.55)} L ${X(3.9)} ${Y(zN + 1.1)} Z" fill="#9aa88a"/>`);
+
+  // ---- stopnišče: lesene nastopne ploskve na kovinskem nosilcu ----
+  const xS = 4.65, xP = 8.65; // začetek stopnic in rob podesta
+  const n = 16;
+  const dvig = (zN - zT) / n, nastop = (xP - xS) / n;
+  let st = `M ${X(xS)} ${Y(zT)}`;
+  for (let i = 0; i < n; i++) st += ` L ${X(xS + i * nastop)} ${Y(zT + (i + 1) * dvig)} L ${X(xS + (i + 1) * nastop)} ${Y(zT + (i + 1) * dvig)}`;
+  st += ` L ${X(xP)} ${Y(zN - 0.2)} Z`;
+  o.push(`<path d="${st}" fill="var(--p-notri-2)" ${TANKA}/>`);
+  for (let i = 0; i < n; i++) o.push(rect(xS + i * nastop - 0.02, zT + (i + 1) * dvig - 0.05, xS + (i + 1) * nastop, zT + (i + 1) * dvig, `fill="var(--p-les)" ${TANKA}`));
+  // kovinski nosilec (lice) pod stopnicami
+  const nosilec = [pt(xS, zT), pt(xP, zN - 0.2), pt(xP, zN - 0.42), pt(xS + 0.35, zT)].join(' ');
+  o.push(`<polygon points="${nosilec}" fill="${iz.E.ral}" ${ROB}/>`);
+  // omare pod stopnicami
+  o.push(rect(6.9, zT, 8.55, zT + 1.25, `fill="var(--p-polica)" ${TANKA}`));
+  o.push(line(7.72, zT, 7.72, zT + 1.25, TANKA));
+
+  // ---- E: ograja ob stopnicah in ob zgornji etaži ----
+  const k = (zN - zT) / (xP - xS);
+  ograja(o, defs, 'ne', iz.E.polnilo, iz.E.ral, xS + 0.12, xP, (x) => zT + (x - xS) * k + 0.08, 0.95, 1.15, 0.045);
+  ograja(o, defs, 'nep', iz.E.polnilo, iz.E.ral, xP, 10.7, () => zN + 0.05, 1.0, 1.1, 0.045);
+
+  // ---- F: ograja galerije ----
+  ograja(o, defs, 'nf', iz.F.polnilo, iz.F.ral, 1.32, 4.25, () => zN + 0.05, 1.0, 1.0, 0.045);
+
+  // ---- prerez sten, tal in stropa ----
+  o.push(rect(0.95, 0, 1.25, zS, `fill="url(#n-prerez)" ${PRE}`));
+  o.push(rect(10.75, 0, 11.05, zS, `fill="url(#n-prerez)" ${PRE}`));
+  o.push(rect(0.95, zS, 11.05, zS + 0.2, `fill="url(#n-prerez)" ${PRE}`));
+  o.push(rect(0.95, 0, 11.05, zT - 0.03, `fill="url(#n-prerez)" ${PRE}`));
+  o.push(rect(1.25, zT - 0.03, 10.75, zT, `fill="var(--p-parket)" ${TANKA}`));
+
+  // višinske kote
+  const kota = (z: number, oznaka: string) => {
+    const x = -0.55;
+    o.push(`<g class="p-kota"><path d="M ${X(x)} ${Y(z)} l -9 -14 h 18 z" fill="none" ${TANKA}/>${line(x - 0.18, z, x + 0.9, z, TANKA)}<text x="${X(x) + 6}" y="${Y(z) - 8}">${oznaka}</text></g>`);
+  };
+  o.push(line(-0.9, 0, 21.1, 0, `stroke="var(--p-crta)" stroke-width="2" ${L}`));
+  kota(zN, '+3,55');
+  kota(zT, '±0,00');
+
+  return `<defs>${defs.join('')}</defs>${o.join('')}`;
+}
+
 export const privzetaIzbira: ProceljeIzbira = {
   A: { polnilo: 'vertikalne', ral: '#383e42' },
   B: { oblika: 'box', ral: '#383e42' },
   C: { polnilo: 'palicna', ral: '#383e42' },
   D: { polnilo: 'horizontalne', vrata: 'drsna', ral: '#383e42' },
+  E: { polnilo: 'palicna', ral: '#0e0e10' },
+  F: { polnilo: 'palicna', ral: '#0e0e10' },
 };

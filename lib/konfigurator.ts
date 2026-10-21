@@ -1,5 +1,5 @@
 // Stanje konfiguratorja, privzete vrednosti, branje iz URL-ja in povzetek za povpraševanje.
-import type { TipOgraje, Polnilo, Montaza, Vrata } from './risbe/ograja';
+import { naPlosci, type TipOgraje, type Polnilo, type Montaza, type Vrata } from './risbe/ograja';
 import type { TipNadstreska, Postavitev, Kritina } from './risbe/nadstresek';
 import { polnilaNazivi } from './moznosti';
 import { RAL } from './ral';
@@ -62,8 +62,10 @@ export const tipiOgraj: { id: TipOgraje; naziv: string; opis: string }[] = [
   { id: 'balkonska', naziv: 'Balkonska ograja', opis: 'Balkoni in terase' },
   { id: 'dvoriscna', naziv: 'Dvoriščna ograja', opis: 'Z vrati in prehodom' },
   { id: 'stopniscna-zunanja', naziv: 'Zunanja stopniščna', opis: 'Ob stopnicah in podestih' },
-  { id: 'stopniscna-notranja', naziv: 'Notranja stopniščna', opis: 'V hiši, tudi z lesom' },
+  { id: 'stopniscna-notranja', naziv: 'Notranja stopniščna', opis: 'Ob stopnicah in ob zgornji etaži' },
+  { id: 'galerijska', naziv: 'Galerijska ograja', opis: 'Notranja galerija ali odprta etaža' },
 ];
+export { naPlosci };
 
 // brez stekla; perforirana pločevina pri dvoriščnih in zunanjih stopniščnih ograjah (ne na balkonih)
 export const polnilaZaTip: Record<TipOgraje, Polnilo[]> = {
@@ -71,6 +73,7 @@ export const polnilaZaTip: Record<TipOgraje, Polnilo[]> = {
   dvoriscna: ['horizontalne', 'vertikalne', 'palicna', 'perforirana', 'zarki'],
   'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'perforirana'],
   'stopniscna-notranja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
+  galerijska: ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
 };
 
 /** razmik nosilnih stebrov (m) */
@@ -79,6 +82,7 @@ export const razmikStebrovZaTip: Record<TipOgraje, { min: number; max: number; p
   dvoriscna: { min: 1, max: 3, privzeto: 2 },
   'stopniscna-zunanja': { min: 0.8, max: 1.6, privzeto: 1.2 },
   'stopniscna-notranja': { min: 0.8, max: 1.6, privzeto: 1.2 },
+  galerijska: { min: 0.8, max: 2, privzeto: 1.3 },
 };
 
 /** svetli razmik med letvicami / palicami (cm); polnila brez letvic (pločevina) nimajo drsnika */
@@ -106,6 +110,7 @@ export const visinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto
   dvoriscna: { min: 80, max: 200, privzeto: 120 },
   'stopniscna-zunanja': { min: 90, max: 120, privzeto: 100 },
   'stopniscna-notranja': { min: 90, max: 120, privzeto: 100 },
+  galerijska: { min: 90, max: 130, privzeto: 100 },
 };
 
 /** razpon dolžine ograje po vrsti: od kratkega balkona do ograje okoli celega dvorišča */
@@ -114,6 +119,7 @@ export const dolzinaZaTip: Record<TipOgraje, { min: number; max: number; privzet
   dvoriscna: { min: 2, max: 80, privzeto: 15 },
   'stopniscna-zunanja': { min: 1, max: 12, privzeto: 3.5 },
   'stopniscna-notranja': { min: 1, max: 12, privzeto: 4 },
+  galerijska: { min: 1, max: 20, privzeto: 5 },
 };
 
 export const jeStopnisce = (t: TipOgraje) => t === 'stopniscna-zunanja' || t === 'stopniscna-notranja';
@@ -133,6 +139,10 @@ export const montazeZaTip: Record<TipOgraje, { id: Montaza; naziv: string; opis:
   ],
   'stopniscna-zunanja': [],
   'stopniscna-notranja': [],
+  galerijska: [
+    { id: 'vrh', naziv: 'Z vrha', opis: 'Stebri stojijo na plošči galerije' },
+    { id: 'stran', naziv: 'S strani', opis: 'Pritrjeno na čelo plošče, tla ostanejo prosta' },
+  ],
 };
 
 export const materiali: { id: Material; naziv: string; opis: string }[] = [
@@ -143,7 +153,8 @@ export const materiali: { id: Material; naziv: string; opis: string }[] = [
 /** pri nadstreških je jeklo zunaj vroče cinkano */
 export const materialiNadstreska = materiali.map((m) => (m.id === 'jeklo' ? { ...m, opis: 'Vroče cinkano in prašno barvano' } : m));
 /** zunanje ograje so brez jekla; jeklo ostane pri notranjih ograjah in nadstreških */
-export const materialiZaTip = (t: TipOgraje) => (t === 'stopniscna-notranja' ? materiali : materiali.filter((m) => m.id !== 'jeklo'));
+/** jeklo samo v notranjosti, zunaj aluminij ali inox */
+export const materialiZaTip = (t: TipOgraje) => (t === 'stopniscna-notranja' || t === 'galerijska' ? materiali : materiali.filter((m) => m.id !== 'jeklo'));
 
 export const vrataMoznosti: { id: Vrata; naziv: string; opis: string }[] = [
   { id: 'brez', naziv: 'Brez vrat', opis: 'Samo ograja' },
@@ -308,7 +319,7 @@ export function ograjaVUrl(o: OgrajaStanje): string {
   }
   if (o.polnilo === 'perforirana') q.set('vzorec', o.vzorec);
   if (o.polnilo === 'zarki') q.set('zarki', o.zarki);
-  if (o.tip === 'balkonska' && o.montaza === 'stran') {
+  if (naPlosci(o.tip) && o.montaza === 'stran') {
     if (o.brezStebrickov) q.set('brezStebrickov', '1');
     if (o.podaljsek) q.set('podaljsek', String(o.podaljsek));
   }
@@ -372,9 +383,9 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
     vrstice.push(o.vzorec === 'po-meri' ? 'Vzorec izreza: po meri (priložena skica)' : `Vzorec izreza: ${naziv(vzorci, o.vzorec).toLowerCase()}`);
   }
   if (montazeZaTip[o.tip].length) vrstice.push(`Montaža: ${naziv(montazeZaTip[o.tip], o.montaza).toLowerCase()}`);
-  if (o.tip === 'balkonska' && o.montaza === 'stran') {
+  if (naPlosci(o.tip) && o.montaza === 'stran') {
     vrstice.push(o.brezStebrickov ? 'Montaža brez stebričkov na nosilni profil' : 'Montaža s stebrički na nosilni profil');
-    vrstice.push(o.podaljsek ? `Podaljšek pod nivo tal: ${o.podaljsek} cm` : 'Spodnji rob v ravnini tal balkona');
+    vrstice.push(o.podaljsek ? `Podaljšek pod nivo tal: ${o.podaljsek} cm` : o.tip === 'galerijska' ? 'Spodnji rob v ravnini tal galerije' : 'Spodnji rob v ravnini tal balkona');
   }
   if (o.tip === 'dvoriscna') {
     if (o.vrata !== 'brez') vrstice.push(`Vrata: ${naziv(vrataMoznosti, o.vrata).toLowerCase()}, širina ${m(o.sirinaVrat)}${o.pogon ? ', s pogonom' : ''}`);

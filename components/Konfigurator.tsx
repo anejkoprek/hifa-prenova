@@ -43,6 +43,7 @@ import {
   steneTipi,
   steneSmeri,
   PREKAT,
+  naPlosci,
   type NadstresekStanje,
   type OgrajaStanje,
 } from '@/lib/konfigurator';
@@ -70,8 +71,9 @@ const IZDELKI: { id: OgrajaStanje['tip'] | 'nadstresek'; naziv: string }[] = [
   { id: 'balkonska', naziv: 'Balkonska ograja' },
   { id: 'nadstresek', naziv: 'Nadstrešek' },
   { id: 'stopniscna-zunanja', naziv: 'Zunanja stopniščna' },
-  { id: 'stopniscna-notranja', naziv: 'Notranja stopniščna' },
   { id: 'dvoriscna', naziv: 'Dvoriščna ograja in vrata' },
+  { id: 'stopniscna-notranja', naziv: 'Notranja stopniščna' },
+  { id: 'galerijska', naziv: 'Galerijska ograja' },
 ];
 
 /** Ikone polnil v izbrani RAL barvi; zelo svetle barve pokažemo temneje, da so vidne na beli kartici. */
@@ -385,10 +387,10 @@ export default function Konfigurator() {
         vzorec: og.vzorec,
         zarki: og.zarki,
         sipka: Math.min(Math.max(og.sipka, sipkaRazpon(og.visina).min), sipkaRazpon(og.visina).max),
-        brezStebrickov: og.tip === 'balkonska' && og.montaza === 'stran' && og.brezStebrickov,
-        podaljsek: og.tip === 'balkonska' && og.montaza === 'stran' ? og.podaljsek : 0,
+        brezStebrickov: naPlosci(og.tip) && og.montaza === 'stran' && og.brezStebrickov,
+        podaljsek: naPlosci(og.tip) && og.montaza === 'stran' ? og.podaljsek : 0,
         id: 'konf-og',
-        h: og.tip === 'dvoriscna' ? 400 : og.tip === 'balkonska' ? 430 : 560,
+        h: og.tip === 'dvoriscna' ? 400 : naPlosci(og.tip) ? 430 : 560,
       });
     }
     return risiNadstresek({
@@ -692,7 +694,7 @@ export default function Konfigurator() {
               {montazeZaTip[og.tip].length ? (
                 <Korak st={++st} naslov="Montaža">
                   <Kartice ime="montaza" moznosti={montazeZaTip[og.tip]} vrednost={og.montaza} nastavi={(v) => posodobiOg('montaza', v)} />
-                  {og.tip === 'balkonska' && og.montaza === 'stran' ? (
+                  {naPlosci(og.tip) && og.montaza === 'stran' ? (
                     <>
                       <p className={`small muted ${s.opomba}`}>
                         Na čelo balkonske plošče namestimo nosilni profil v barvi ograje, nanj pa montiramo ograjo.

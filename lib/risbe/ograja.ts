@@ -4,7 +4,9 @@
 import { obl, oblikeSvg, type Vzorec } from '../vzorci';
 import { odsekiZarkov, type VzorecZarkov } from '../zarki';
 
-export type TipOgraje = 'balkonska' | 'dvoriscna' | 'stopniscna-zunanja' | 'stopniscna-notranja';
+export type TipOgraje = 'balkonska' | 'galerijska' | 'dvoriscna' | 'stopniscna-zunanja' | 'stopniscna-notranja';
+/** ograja na robu plošče: zunanji balkon ali notranja galerija (ista montaža z vrha ali s strani) */
+export const naPlosci = (t: TipOgraje) => t === 'balkonska' || t === 'galerijska';
 export type Polnilo = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana';
 export type Montaza = 'vrh' | 'stran' | 'podzidek' | 'temelj';
 export type Vrata = 'brez' | 'krilna' | 'drsna' | 'samonosna';
@@ -57,7 +59,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const r = stopnice ? 0.6 : 0;
   const stopOff = stopnice ? 0.168 : 0;
   const visina = Math.min(Math.max(o.visina, 60), 220) / 100;
-  const stran = o.tip === 'balkonska' && o.montaza === 'stran';
+  const stran = naPlosci(o.tip) && o.montaza === 'stran';
   const podaljsek = stran ? Math.min(Math.max(o.podaljsek ?? 0, 0), 40) / 100 : 0;
   // s strani: spodnji rob poravnan s tlemi (0) ali nižje čez čelo plošče
   // odprte palice: brez stebrov in spodnje letve, vse palice enake in sidrane posebej (od tal oz. plošče)
@@ -83,7 +85,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const skupaj = Ls + P + (prehod ? prehod + gap : 0) + (gate ? gate + gap : 0);
 
   // podlaga pod ograjo
-  const D = o.tip === 'balkonska' ? 0.22 : o.montaza === 'podzidek' ? 0.3 : 0.12;
+  const D = naPlosci(o.tip) ? 0.22 : o.montaza === 'podzidek' ? 0.3 : 0.12;
   const totalH = D + stopOff + visina + Ls * r + 0.04;
 
   const mL = W * 0.1;
@@ -105,8 +107,10 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const defs: string[] = [];
 
   // ---------- podlaga ----------
-  if (o.tip === 'balkonska') {
+  if (naPlosci(o.tip)) {
     parts.push(`<rect x="${n(X(-0.35))}" y="${n(Fy)}" width="${n((Ls + 0.7) * s)}" height="${n(0.22 * s)}" fill="var(--draw-concrete)" stroke="var(--draw-line)" stroke-width="1"/>`);
+    // galerija v hiši: parket na plošči
+    if (o.tip === 'galerijska') parts.push(`<rect x="${n(X(-0.35))}" y="${n(Fy)}" width="${n((Ls + 0.7) * s)}" height="${n(0.035 * s)}" fill="var(--draw-wood)" stroke="var(--draw-line)" stroke-width="1"/>`);
   } else if (dvorisce) {
     const end = skupaj + 0.35;
     if (o.montaza === 'podzidek') {
@@ -280,7 +284,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
     if (stran) bottom = Math.max(Fy + 0.17 * s, Yb(x) + 0.02 * s);
     const px = X(x) - (pw * s) / 2;
     parts.push(`<rect x="${n(px)}" y="${n(top)}" width="${n(pw * s)}" height="${n(bottom - top)}" fill="${barva}" stroke="${edge}" stroke-width="0.8"/>`);
-    if (o.tip === 'balkonska' && o.montaza === 'stran') {
+    if (naPlosci(o.tip) && o.montaza === 'stran') {
       for (const yy of [Fy + 0.05 * s, Fy + 0.12 * s]) parts.push(`<circle cx="${n(X(x))}" cy="${n(yy)}" r="${n(Math.max(1.5, 0.012 * s))}" fill="var(--draw-bg)"/>`);
     } else if (!stopnice && !(dvorisce && o.montaza === 'temelj')) {
       parts.push(`<rect x="${n(X(x) - 0.06 * s)}" y="${n(bottom - 0.012 * s)}" width="${n(0.12 * s)}" height="${n(0.012 * s)}" fill="${barva}"/>`);
