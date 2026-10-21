@@ -371,16 +371,24 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     g.add(skatla(L + 0.3, 0.2, globina, galerija ? M.fasada : M.beton, L / 2, yPlosce - 0.1, globina / 2));
     if (galerija) {
       g.add(skatla(L + 0.3, 0.02, globina, M.parket, L / 2, yPlosce + 0.01, globina / 2));
-      // vrata v sobe ob galeriji in velika steklena stena v dnevnem prostoru spodaj
+      // bočna stena, da je jasno, da gre za prostor v hiši (dvovišinski dnevni prostor pod galerijo)
+      g.add(skatla(0.2, 6.0, globina + 3.2, M.fasada, -0.7, 3.0, (globina + 3.2) / 2 - 0.3));
+      // vrata v sobe ob galeriji
       const nVrat = Math.max(1, Math.floor(L / 3.2));
       for (let i = 0; i < nVrat; i++) {
         const x = ((i + 0.5) * L) / nVrat;
-        g.add(skatla(0.95, 2.1, 0.04, M.les, x, yPlosce + 1.05, 0.02));
-        g.add(skatla(0.04, 0.04, 0.03, M.kovina, x + 0.36, yPlosce + 1.05, 0.06));
+        g.add(skatla(1.05, 2.15, 0.03, M.okvirOkna, x, yPlosce + 1.08, 0.015));
+        g.add(skatla(0.92, 2.08, 0.04, M.les, x, yPlosce + 1.05, 0.02));
+        g.add(skatla(0.12, 0.02, 0.03, M.kovina, x + 0.33, yPlosce + 1.05, 0.06));
       }
-      const sp = okno(Math.min(L * 0.7, 6), 2.4, M);
+      // spodaj: steklena stena na vrt, kavč in preproga
+      const sp = okno(Math.min(L * 0.7, 6), 2.45, M);
       sp.position.set(L / 2, 1.3, 0.03);
       g.add(sp);
+      const kx = L / 2;
+      g.add(skatla(Math.min(2.4, L * 0.5), 0.02, 1.6, M.betonTemen, kx, 0.01, globina + 1.2));
+      g.add(skatla(Math.min(2.2, L * 0.45), 0.42, 0.9, M.okvirOkna, kx, 0.21, globina + 0.25));
+      g.add(skatla(Math.min(2.2, L * 0.45), 0.4, 0.18, M.okvirOkna, kx, 0.62, globina - 0.12));
       const ograja = o.montaza === 'stran'
         ? ograjaVzdolz(L, h + Math.max(0, o.podaljsek) / 100, o.polnilo, M, 0, o.brezStebrickov ? 0 : Math.max(0, 0.16 - Math.max(0, o.podaljsek) / 100), { ...op, dno: 0, brezStebrov: o.brezStebrickov, sipka: (op.sipka ?? h / 2) + Math.max(0, o.podaljsek) / 100 })
         : ograjaVzdolz(L, h, o.polnilo, M, 0, 0, op);

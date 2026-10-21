@@ -213,50 +213,64 @@
 .plosca > * { min-width: 0; }
 
 /* ---------- vstop v hišo ---------- */
-.prostor { animation: prikazi 450ms ease both; }
-@keyframes prikazi { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .prostor { animation: none; } }
 
 .vstopi {
   position: absolute;
   z-index: 4;
   translate: -50% -50%;
   display: inline-flex; align-items: center; gap: 0.4rem;
-  min-height: 40px;
-  padding: 0.45rem 0.9rem;
+  min-height: 38px;
+  padding: 0.4rem 0.85rem;
   border-radius: 999px;
-  border: 0;
-  background: var(--zelena);
-  color: var(--na-zeleni);
+  border: 1.5px solid var(--crnilo);
+  background: var(--bela);
+  color: var(--crnilo);
   font-size: var(--step--1); font-weight: 700;
   white-space: nowrap;
   box-shadow: 0 0 0 4px var(--papir), 0 10px 24px -10px rgb(20 23 25 / 0.5);
   cursor: pointer;
-  transition: transform 160ms var(--ease-out);
+  transition: transform 200ms var(--ease-out), background-color 200ms var(--ease-out), color 200ms var(--ease-out), border-color 200ms var(--ease-out);
 }
-.vstopi:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .vstopi:hover { background: var(--zelena); color: var(--na-zeleni); border-color: var(--zelena); transform: scale(1.07); }
+}
+.vstopi:focus-visible { background: var(--zelena); color: var(--na-zeleni); border-color: var(--zelena); }
+.vstopi:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: no-preference) {
   .hero[data-namig] .vstopi { animation: povabi 2.4s var(--ease-out) infinite; }
 }
 @keyframes povabi { 0%, 70%, 100% { box-shadow: 0 0 0 4px var(--papir), 0 0 0 4px rgb(140 190 40 / 0.5); } 35% { box-shadow: 0 0 0 4px var(--papir), 0 0 0 12px rgb(140 190 40 / 0); } }
 @media (max-width: 760px) {
-  .vstopi { min-height: 34px; padding: 0.35rem 0.7rem; font-size: 0.78rem; }
+  /* na telefonu samo okrogel gumb z ikono vrat; besedilo je v zavihku »Notranjost« */
+  .vstopi { min-height: 0; width: 34px; height: 34px; padding: 0; justify-content: center; box-shadow: 0 0 0 3px var(--draw-bg); }
 }
 
 .nazaj { position: absolute; z-index: 3; left: 0; top: 10px; box-shadow: var(--senca-1); }
 @media (max-width: 760px) { .nazaj { left: 8px; top: 8px; } }
 
 .vhodLuc { fill: var(--p-svetloba); }
-.krilo { transform-box: fill-box; transform-origin: 0% 50%; transition: transform 650ms cubic-bezier(0.55, 0, 0.3, 1), filter 650ms ease; }
-.vhod[data-odprto] .krilo { transform: scaleX(0.14) skewY(-8deg); filter: brightness(0.7); }
+.krilo { transform-box: fill-box; transform-origin: 0% 50%; transition: transform 650ms cubic-bezier(0.55, 0, 0.3, 1); }
+.vhod[data-odprto] .krilo { transform: scaleX(0.14) skewY(-8deg); }
+
+/* med premikom pogleda oznake in gumbi počakajo, da se ne vlečejo za risbo */
+.oznaka, .vstopi { transition-property: transform, background-color, color, border-color, opacity; }
+.blisk {
+  position: absolute; inset: 0; z-index: 2;
+  background: var(--p-svetloba);
+  pointer-events: none;
+  animation: blisk 650ms ease-out both;
+}
+@keyframes blisk { from { opacity: 0.9; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .blisk { display: none; } }
 
 /* med vstopom naslov in oznake umaknemo, da je v ospredju pot skozi vrata */
 .uvod { transition: opacity 300ms ease; }
-.hero[data-prehod] .uvod { opacity: 0; }
 
-.kratko { display: none; }
 @media (max-width: 760px) {
   .dolgo { display: none; }
-  .kratko { display: inline; }
 }
 .zavihekVrata { background: var(--papir); }
+
+/* barva podlage risbe (za zbledelo okolico v notranjosti) */
+.risba { --risba-ozadje: var(--papir); }
+@media (max-width: 760px) { .risba { --risba-ozadje: var(--draw-bg); } }
