@@ -5,6 +5,8 @@ export const MAX_DATOTEK = 10;
 export const MAX_VELIKOST = 10 * 1024 * 1024; // 10 MB na datoteko
 // Vercel sprejme največ 4,5 MB na zahtevek, zato skupaj (po zmanjšanju fotografij) največ 4 MB
 export const MAX_SKUPAJ = 4 * 1024 * 1024;
+/** največ toliko fotografij iz naše galerije lahko obiskovalec doda kot primer */
+export const MAX_GALERIJA = 6;
 export const DOVOLJENI_TIPI = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
 
 export const shema = z.object({
@@ -19,6 +21,7 @@ export const shema = z.object({
   mere: z.string().trim().max(400).optional().default(''),
   sporocilo: z.string().trim().max(4000).optional().default(''),
   konfiguracija: z.string().trim().max(2000).optional().default(''),
+  galerija: z.array(z.string().max(200)).max(6).default([]),
   soglasje: z.literal('da', { message: 'Za odgovor potrebujemo vaše soglasje s politiko zasebnosti.' }),
 });
 

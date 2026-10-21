@@ -378,3 +378,14 @@ textarea.vnos { min-height: 132px; resize: vertical; line-height: 1.5; }
   .js .razkrij { opacity: 0; transform: translateY(16px); transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
   .js .razkrij.je-vidno { opacity: 1; transform: none; }
 }
+
+/* gumb »Želim podobno« v povečavi fotografije */
+.lightbox-podobno {
+  display: inline-flex; align-items: center;
+  min-height: 40px; margin: 6px 6px 0 0; padding: 0.45rem 0.95rem;
+  border-radius: var(--r-ctrl);
+  background: var(--zelena); color: var(--na-zeleni);
+  font-weight: 680; font-size: 0.92rem; text-decoration: none;
+  align-self: center;
+}
+.lightbox-podobno:hover { background: var(--zelena-svetla); }

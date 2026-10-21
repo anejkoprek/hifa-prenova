@@ -1,13 +1,20 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { CheckCircle, FilePdf, ImageSquare, PaperPlaneTilt, Trash, UploadSimple, WarningCircle } from '@phosphor-icons/react';
-import { IZDELKI, MAX_DATOTEK, MAX_SKUPAJ, MAX_VELIKOST, shema } from '@/lib/povprasevanje';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { CheckCircle, FilePdf, ImageSquare, Images, PaperPlaneTilt, Trash, UploadSimple, WarningCircle, X } from '@phosphor-icons/react';
+import { IZDELKI, MAX_DATOTEK, MAX_GALERIJA, MAX_SKUPAJ, MAX_VELIKOST, shema } from '@/lib/povprasevanje';
+import { vseSlike } from '@/lib/galerije';
+import { slika } from '@/lib/slike';
 import { deli, polnilaNazivi, oblikeNazivi, vrataNazivi } from '@/lib/moznosti';
 import { ralIme } from '@/lib/ral';
 import { podjetje } from '@/lib/podjetje';
 import type { DelId } from '@/lib/risbe/procelje';
 import s from './Povprasevanje.module.css';
+
+const IzbiraGalerije = dynamic(() => import('./IzbiraGalerije'), { ssr: false });
+const ALT = new Map(vseSlike().map((x) => [x.pot, x.alt]));
 
 type Priloga = { id: string; datoteka: File; predogled?: string };
 type Props = {
@@ -58,6 +65,18 @@ export default function Povprasevanje({ izdelki = [], konfiguracija = '', naslov
   const [demo, setDemo] = useState(false);
   const obrazec = useRef<HTMLFormElement>(null);
   const vnosDatotek = useRef<HTMLInputElement>(null);
+  const [izGalerije, setIzGalerije] = useState<string[]>([]);
+  const [galerijaOdprta, setGalerijaOdprta] = useState(false);
+
+  // fotografija, izbrana v galeriji (?slika=...), in povpraševanje po meri (?izdelek=Drugo)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const poti = q.getAll('slika').filter((p) => ALT.has(p)).slice(0, MAX_GALERIJA);
+    if (poti.length) setIzGalerije(poti);
+    const izd = q.get('izdelek');
+    if (izd && (IZDELKI as readonly string[]).includes(izd)) setIzbrani((x) => (x.includes(izd) ? x : [...x, izd]));
+    if (q.get('po-meri') === '1') setOpis((o) => o || 'Povpraševanje po meri: ustreznega izdelka nisem našel v ponudbi.');
+  }, []);
 
   useEffect(() => setOpis(konfiguracija), [konfiguracija]);
 
@@ -131,6 +150,7 @@ export default function Povprasevanje({ izdelki = [], konfiguracija = '', naslov
       mere: fd.get('mere') ?? '',
       sporocilo: fd.get('sporocilo') ?? '',
       konfiguracija: fd.get('konfiguracija') ?? '',
+      galerija: fd.getAll('galerija').map(String),
       soglasje: fd.get('soglasje') ?? '',
     });
     if (!preveri.success) {
@@ -282,6 +302,33 @@ export default function Povprasevanje({ izdelki = [], konfiguracija = '', naslov
           />
         </div>
         {napaka('datoteke')}
+
+        <div className={s.galerijaVrstica}>
+          <span className="small muted">Nimate svoje fotografije želenega izdelka?</span>
+          <button type="button" className={s.izGalerije} onClick={() => setGalerijaOdprta(true)}>
+            <Images size={18} weight="bold" aria-hidden /> Izberite iz naše galerije
+          </button>
+        </div>
+        {izGalerije.length ? (
+          <ul className={s.izbraneGalerija} aria-label="Izbrane fotografije iz galerije">
+            {izGalerije.map((p) => (
+              <li key={p}>
+                <Image src={slika(p)} alt={ALT.get(p) ?? ''} fill sizes="120px" className={s.izbranaSlika} />
+                <input type="hidden" name="galerija" value={p} />
+                <button type="button" onClick={() => setIzGalerije((x) => x.filter((y) => y !== p))} aria-label={`Odstrani: ${ALT.get(p) ?? 'fotografija'}`}>
+                  <X size={14} weight="bold" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <IzbiraGalerije
+          odprto={galerijaOdprta}
+          izbrane={izGalerije}
+          najvec={MAX_GALERIJA}
+          potrdi={setIzGalerije}
+          zapri={() => setGalerijaOdprta(false)}
+        />
         {priloge.length ? (
           <ul className={s.priloge}>
             {priloge.map((p) => (

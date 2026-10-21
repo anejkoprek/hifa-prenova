@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import YARL from 'yet-another-react-lightbox';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import Counter from 'yet-another-react-lightbox/plugins/counter';
@@ -14,6 +15,7 @@ const sirine = [828, 1280, 2048];
 const optimiziraj = (src: string, w: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=75`;
 
 export default function Lightbox({ slike, indeks, zapri }: { slike: SlikaZ[]; indeks: number; zapri: () => void }) {
+  const [trenutna, setTrenutna] = useState(indeks);
   const slides = slike.map((x) => {
     const src = slika(x.pot);
     return {
@@ -33,6 +35,16 @@ export default function Lightbox({ slike, indeks, zapri }: { slike: SlikaZ[]; in
       slides={slides}
       plugins={[Zoom, Counter, Captions]}
       carousel={{ finite: false, preload: 2 }}
+      on={{ view: ({ index }) => setTrenutna(index) }}
+      toolbar={{
+        buttons: [
+          // izbrano fotografijo vzamemo kot primer v povpraševanje
+          <a key="podobno" className="lightbox-podobno" href={`/kontakt?slika=${encodeURIComponent(slike[trenutna]?.pot ?? '')}#povprasevanje`}>
+            Želim podobno
+          </a>,
+          'close',
+        ],
+      }}
       controller={{ closeOnBackdropClick: true, closeOnPullDown: true }}
       captions={{ descriptionTextAlign: 'center' }}
       labels={{

@@ -96,6 +96,22 @@ export function Trak({ slike }: { slike: { pot: string; alt: string }[] }) {
   );
 }
 
+/** povpraševanje po meri, ko obiskovalec v ponudbi ne najde pravega izdelka */
+export const POVEZAVA_PO_MERI = '/kontakt?izdelek=Drugo&po-meri=1#povprasevanje';
+export function PoMeri() {
+  return (
+    <div className={s.poMeri}>
+      <div>
+        <p className={s.poMeriNaslov}>Ne najdete ustreznega izdelka?</p>
+        <p className="small muted">Izdelamo tudi po meri. Opišite, kaj potrebujete, in priložite skico ali fotografijo.</p>
+      </div>
+      <Link className="gumb gumb--obroba" href={POVEZAVA_PO_MERI}>
+        Povpraševanje po meri <ArrowRight size={16} weight="bold" aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
 export function SekcijaPovprasevanje({
   naslov = 'Pošljite fotografijo in mere',
   izdelki,

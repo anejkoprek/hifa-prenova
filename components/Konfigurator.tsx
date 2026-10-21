@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { Check, LinkSimple, ArrowCounterClockwise, Cube, PencilRuler, Minus, Plus, PencilSimpleLine } from '@phosphor-icons/react';
 import Povprasevanje from './Povprasevanje';
 import PolniloIkona from './PolniloIkona';
@@ -467,6 +468,9 @@ export default function Konfigurator() {
             );
           })}
         </div>
+        <Link className={s.poMeriPovezava} href="/kontakt?izdelek=Drugo&po-meri=1#povprasevanje">
+          Ne najdete ustreznega izdelka? <strong>Povpraševanje po meri</strong>
+        </Link>
       </div>
 
       <div className={`wrap ${s.mreza}`}>

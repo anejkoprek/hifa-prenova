@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { vseSlike } from '@/lib/galerije';
+import { slika } from '@/lib/slike';
 import { shema, MAX_DATOTEK, MAX_SKUPAJ, MAX_VELIKOST, DOVOLJENI_TIPI, type Povprasevanje } from '@/lib/povprasevanje';
 
 // Sprejme povpraševanje (multipart/form-data) s prilogami, ga preveri in pošlje po e-pošti (glej poslji()).
@@ -22,6 +24,8 @@ export async function POST(req: Request) {
     mere: fd.get('mere') ?? '',
     sporocilo: fd.get('sporocilo') ?? '',
     konfiguracija: fd.get('konfiguracija') ?? '',
+    // samo poti, ki res obstajajo v naši galeriji
+    galerija: fd.getAll('galerija').map(String).filter((p) => DOVOLJENE_POTI.has(p)),
     soglasje: fd.get('soglasje') ?? '',
   });
   if (!rezultat.success) {
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    await poslji(rezultat.data, datoteke);
+    await poslji(rezultat.data, datoteke, new URL(req.url).origin);
   } catch (e) {
     console.error('[povpraševanje] pošiljanje ni uspelo', e);
     return NextResponse.json({ ok: false, napaka: 'Sporočila ni bilo mogoče poslati. Pokličite nas na 031 688 704.' }, { status: 502 });
@@ -60,9 +64,24 @@ export async function POST(req: Request) {
 // Brez ključa obrazec deluje v demo načinu in samo zapiše povpraševanje v dnevnik strežnika.
 const aktivno = () => Boolean(process.env.RESEND_API_KEY && process.env.POVPRASEVANJE_ZA);
 
+const DOVOLJENE_POTI = new Set(vseSlike().map((x) => x.pot));
+const ALT = new Map(vseSlike().map((x) => [x.pot, x.alt]));
+
 const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-async function poslji(p: Povprasevanje, datoteke: File[]) {
+/** fotografije, ki jih je stranka izbrala v naši galeriji, kot sličice s povezavo na polno velikost */
+function galerijaHtml(poti: string[], izvor: string) {
+  if (!poti.length) return '';
+  const abs = (p: string) => {
+    const u = slika(p);
+    return u.startsWith('http') ? u : `${izvor}${u}`;
+  };
+  return `<h3 style="font-family:sans-serif;margin:18px 0 8px">Primeri iz galerije, ki so stranki všeč</h3><div>${poti
+    .map((p) => `<a href="${abs(p)}" style="display:inline-block;margin:0 8px 8px 0"><img src="${abs(p)}" alt="${esc(ALT.get(p) ?? '')}" width="200" style="width:200px;height:150px;object-fit:cover;border-radius:6px"></a>`)
+    .join('')}</div>`;
+}
+
+async function poslji(p: Povprasevanje, datoteke: File[], izvor: string) {
   if (!aktivno()) {
     console.info('[povpraševanje · demo]', JSON.stringify(p), `${datoteke.length} prilog`);
     return;
@@ -79,7 +98,7 @@ async function poslji(p: Povprasevanje, datoteke: File[]) {
   ];
   const html = `<h2 style="font-family:sans-serif">Novo povpraševanje s spletne strani</h2><table style="font-family:sans-serif;border-collapse:collapse">${vrstice
     .map(([k, v]) => `<tr><td style="padding:6px 12px 6px 0;color:#545d62;vertical-align:top">${k}</td><td style="padding:6px 0"><strong>${esc(v).replace(/\n/g, '<br>')}</strong></td></tr>`)
-    .join('')}</table><p style="font-family:sans-serif;color:#545d62">Priloženih datotek: ${datoteke.length}</p>`;
+    .join('')}</table>${galerijaHtml(p.galerija, izvor)}<p style="font-family:sans-serif;color:#545d62">Priloženih datotek: ${datoteke.length}</p>`;
   const attachments = await Promise.all(
     datoteke.map(async (f) => ({ filename: f.name, content: Buffer.from(await f.arrayBuffer()).toString('base64') })),
   );

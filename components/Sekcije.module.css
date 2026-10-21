@@ -246,3 +246,15 @@
 .gpNaslov :global(.detajl) { --d: clamp(40px, 32px + 1.6vw, 56px); margin-top: 0.15em; }
 .gpNaslov h1 { max-width: 18ch; }
 .gpAkcije { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.3rem; }
+
+/* ---------- povpraševanje po meri ---------- */
+.poMeri {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem;
+  margin-top: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+  padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  border: 1px dashed var(--crta-mocna);
+  border-radius: var(--r-media);
+  background: var(--bela);
+}
+.poMeri > div { display: grid; gap: 0.25rem; }
+.poMeriNaslov { font-weight: 700; font-size: var(--step-1); }

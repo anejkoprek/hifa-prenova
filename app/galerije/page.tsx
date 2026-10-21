@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Foto from '@/components/Foto';
 import Galerija from '@/components/Galerija';
-import { GlavaPodstrani, SekcijaPovprasevanje } from '@/components/Sekcije';
+import { GlavaPodstrani, PoMeri, SekcijaPovprasevanje } from '@/components/Sekcije';
 import { galerije, steviloSlik, vseSlike } from '@/lib/galerije';
 import s from './galerije.module.css';
 
@@ -37,9 +37,10 @@ export default function Galerije() {
       <section className="sekcija" aria-label="Vse fotografije">
         <div className="wrap">
           <Galerija slike={vseSlike()} filtri zacetno={27} />
+          <PoMeri />
         </div>
       </section>
-      <SekcijaPovprasevanje naslov="Vam je kaj od tega všeč?" uvod="Pošljite fotografijo obstoječega stanja in povezavo ali opis izdelka, ki vam je všeč. Pripravili bomo informativno ponudbo." />
+      <SekcijaPovprasevanje naslov="Vam je kaj od tega všeč?" uvod="Odprite fotografijo in kliknite »Želim podobno«, ali pa fotografije izberite spodaj v obrazcu. Dodajte še fotografijo obstoječega stanja in pripravili bomo informativno ponudbo." />
     </>
   );
 }
