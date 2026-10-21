@@ -62,7 +62,8 @@ export function risiOgrajo(o: OgrajaOpts): string {
   // s strani: spodnji rob poravnan s tlemi (0) ali nižje čez čelo plošče
   // odprte palice: brez stebrov in spodnje letve, vse palice enake in sidrane posebej (od tal oz. plošče)
   const odprte = (o.polnilo === 'palicna' || o.polnilo === 'vertikalne') && o.zakljucek === 'odprto';
-  const clearance = stran ? -podaljsek : odprte ? 0 : dvorisce ? 0.05 : 0.06;
+  // na stopnicah so odprte palice pritrjene ob bok in segajo ~20 cm pod rob stopnic
+  const clearance = stran ? -podaljsek : odprte ? (stopnice ? -0.2 : 0) : dvorisce ? 0.05 : 0.06;
   const brezStebrov = stran && !!o.brezStebrickov;
   const razmik = (privzeto: number) => (o.razmikPolnila && o.razmikPolnila > 0 ? o.razmikPolnila / 100 : privzeto);
   const hm = visina - clearance;

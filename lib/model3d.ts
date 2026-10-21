@@ -180,8 +180,10 @@ export type OpcijeOgraje = {
   seme?: number;
   /** odprte palice brez stebrov: vse palice enake (kvadratna cev), vsaka sidrana posebej, brez spodnje letve */
   proste?: boolean;
-  /** koliko palice segajo pod dno polja (sidranje v ploščo), m */
+  /** koliko palice segajo pod dno polja (sidranje v ploščo ali ob bok stopnic), m */
   podaljsaj?: number;
+  /** brez prve palice (nadaljevanje ob vogalu, kjer palica že stoji) */
+  brezPrve?: boolean;
 };
 
 export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Materiali, op: OpcijeOgraje = {}) {
@@ -201,14 +203,10 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
   }
   // prostor za polnilo; proste palice gredo od tal (oz. iz plošče) do vrha
   const notri = op.proste ? { y0: -(op.podaljsaj ?? 0), y1: h } : { y0: dno + okvir, y1: odprte ? h : h - okvir };
-  if (odprte) {
+  const ys = Math.min(Math.max(op.sipka ?? h - 0.12, (op.proste ? 0 : notri.y0) + 0.1), h - 0.06);
+  if (odprte && !op.proste) {
     // čisto tanka okrogla šipka skozi palice, da ostanejo poravnane
-    const ys = Math.min(Math.max(op.sipka ?? h - 0.12, notri.y0 + 0.1), h - 0.06);
-    const sip = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, Math.hypot(L, r) + 0.02, 10), M.kovina);
-    sip.position.set(L / 2, ys + r / 2, 0);
-    sip.rotation.z = -Math.PI / 2 + Math.atan2(r, L);
-    sip.castShadow = true;
-    g.add(sip);
+    g.add(cev(new THREE.Vector3(0, ys, 0), new THREE.Vector3(L, r + ys, 0), 0.005, M.kovina));
   }
 
   if (polnilo === 'vertikalne' || polnilo === 'palicna') {
@@ -217,11 +215,24 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
     const b = op.proste ? 0.04 : polnilo === 'vertikalne' ? 0.01 : 0.05;
     const korak = a + (polnilo === 'vertikalne' ? razmik(0.025) : razmik(0.09));
     const seg: [number, number, number, number][] = [];
-    const n = Math.max(1, Math.floor((L - 0.04) / korak));
-    const zamik = (L - (n - 1) * korak) / 2;
-    for (let i = 0; i < n; i++) {
-      const x = zamik + i * korak;
-      seg.push([x, spodaj(x) + notri.y0, x, spodaj(x) + notri.y1]);
+    if (op.proste) {
+      // enakomerno od prve do zadnje palice na robovih; ob vogalu (podest) prva palica odpade, ker že stoji
+      const n = Math.max(2, Math.round((L - a) / korak) + 1);
+      const korakX = (L - a) / (n - 1);
+      for (let i = op.brezPrve ? 1 : 0; i < n; i++) {
+        const x = a / 2 + i * korakX;
+        seg.push([x, spodaj(x) + notri.y0, x, spodaj(x) + notri.y1]);
+      }
+      // vezna palica natanko od prve do zadnje palice (ob vogalu se stakne s prejšnjim odsekom)
+      const x0 = op.brezPrve ? -a / 2 : a / 2, x1 = L - a / 2;
+      g.add(cev(new THREE.Vector3(x0, spodaj(x0) + ys, 0), new THREE.Vector3(x1, spodaj(x1) + ys, 0), 0.005, M.kovina));
+    } else {
+      const n = Math.max(1, Math.floor((L - 0.04) / korak));
+      const zamik = (L - (n - 1) * korak) / 2;
+      for (let i = 0; i < n; i++) {
+        const x = zamik + i * korak;
+        seg.push([x, spodaj(x) + notri.y0, x, spodaj(x) + notri.y1]);
+      }
     }
     // profili stojijo pokonci: dolžina po y, presek a × b
     const im = instance(seg, a, b, M.kovina);
@@ -567,12 +578,17 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     }
     g.add(skatla(podest, dvig, sirina, M.betonTemen, dolzinaStopnic + podest / 2, dvig / 2, -sirina / 2));
     // ograja na zunanjem robu (z = 0): poševni del ob stopnicah, nato vodoravni na podestu
-    const posevna = ograjaVzdolz(dolzinaStopnic, h, o.polnilo, M, dvig, 0, op);
-    posevna.position.set(0.05, nastop, -0.06);
+    // odprte palice so pritrjene ob bok stopnic in segajo pod nastopne ploskve (kot pri izvedenih ograjah)
+    const ob = odprte ? 0.035 : -0.06;
+    const pod = odprte ? 0.28 : 0;
+    // poševni del gre po robovih stopnic do zadnje stopnice; ta je že v višini podesta
+    const dPos = odprte ? dolzinaStopnic - globinaStopnice : dolzinaStopnic;
+    const posevna = ograjaVzdolz(dPos, h, o.polnilo, M, odprte ? dvig - nastop : dvig, pod, op);
+    posevna.position.set(0.05, nastop, ob);
     g.add(posevna);
-    if (ograjaPodesta >= 0.3) {
-      const vodoravna = ograjaVzdolz(ograjaPodesta, h, o.polnilo, M, 0, 0, op);
-      vodoravna.position.set(dolzinaStopnic + 0.05, dvig, -0.06);
+    if (ograjaPodesta >= 0.3 || odprte) {
+      const vodoravna = ograjaVzdolz(odprte ? ograjaPodesta + globinaStopnice : ograjaPodesta, h, o.polnilo, M, 0, pod, { ...op, brezPrve: true });
+      vodoravna.position.set(dPos + 0.05, dvig, ob);
       g.add(vodoravna);
     }
     return { skupina: g, sredisce: new THREE.Vector3((dolzinaStopnic + podest) / 2, dvig * 0.7, -sirina / 2), velikost: dolzinaStopnic + podest + 1.5, smer: new THREE.Vector3(-0.8, 0.45, 1) };
@@ -599,12 +615,15 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     n1.position.z = z;
     g.add(n1);
   }
-  const posevna = ograjaVzdolz(dolzinaStopnic, h, o.polnilo, M, dvig, 0, op);
-  posevna.position.set(0.1, nastop, 0.02);
+  const obN = odprte ? 0.03 : 0.02;
+  const podN = odprte ? 0.22 : 0;
+  const dPosN = odprte ? dolzinaStopnic - globinaStopnice : dolzinaStopnic;
+  const posevna = ograjaVzdolz(dPosN, h, o.polnilo, M, odprte ? dvig - nastop : dvig, podN, op);
+  posevna.position.set(0.1, nastop, obN);
   g.add(posevna);
-  if (ograjaZgoraj >= 0.3) {
-    const vodoravna = ograjaVzdolz(ograjaZgoraj, h, o.polnilo, M, 0, 0, op);
-    vodoravna.position.set(dolzinaStopnic + 0.1, dvig, 0.02);
+  if (ograjaZgoraj >= 0.3 || odprte) {
+    const vodoravna = ograjaVzdolz(odprte ? ograjaZgoraj + globinaStopnice : ograjaZgoraj, h, o.polnilo, M, 0, podN, { ...op, brezPrve: true });
+    vodoravna.position.set(dPosN + 0.1, dvig, obN);
     g.add(vodoravna);
   }
   return { skupina: g, sredisce: new THREE.Vector3((dolzinaStopnic + zgornji) / 2, dvig * 0.6, -sirina / 2), velikost: dolzinaStopnic + zgornji + 1, smer: new THREE.Vector3(-0.7, 0.35, 1), podlaga: 'parket' };

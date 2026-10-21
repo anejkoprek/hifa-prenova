@@ -31,7 +31,7 @@ export type OgrajaStanje = {
   vzorec: Vzorec;
   /** žarki: izvedba */
   zarki: VzorecZarkov;
-  /** višina tanke vodoravne šipke pri odprtih palicah, cm od tal (od polovice višine navzgor) */
+  /** višina vezne palice pri izvedbi brez zgornjega ročaja, cm od tal (od polovice višine navzgor) */
   sipka: number;
   /** montaža s strani: ograja pritrjena neposredno na nosilno ploščo, brez stebričkov */
   brezStebrickov: boolean;
@@ -90,8 +90,8 @@ export const razmikPolnilaZaPolnilo: Partial<Record<Polnilo, { min: number; max:
 };
 
 export const zakljucki: { id: Zakljucek; naziv: string; opis: string }[] = [
-  { id: 'rocaj', naziv: 'Z zgornjo letvijo', opis: 'Vodoravna letev pokrije palice zgoraj' },
-  { id: 'odprto', naziv: 'Odprte navzgor', opis: 'Brez zgornje letve in stebrov: enake palice, zgoraj tanka šipka' },
+  { id: 'rocaj', naziv: 'Z zgornjim ročajem', opis: 'Palice so zgoraj zaključene z vodoravnim ročajem' },
+  { id: 'odprto', naziv: 'Brez zgornjega ročaja', opis: 'Prosto stoječe palice, povezane z vezno palico' },
 ];
 /** polnila, pri katerih lahko palice zgoraj ostanejo odprte */
 export const imaZakljucek = (p: Polnilo) => p === 'palicna' || p === 'vertikalne';
@@ -147,14 +147,14 @@ export const materialiZaTip = (t: TipOgraje) => (t === 'stopniscna-notranja' ? m
 
 export const vrataMoznosti: { id: Vrata; naziv: string; opis: string }[] = [
   { id: 'brez', naziv: 'Brez vrat', opis: 'Samo ograja' },
-  { id: 'drsna', naziv: 'Drsna', opis: 'Kolesca na tirnici, vgrajeni v tla' },
-  { id: 'samonosna', naziv: 'Samonosna', opis: 'Brez tirnice, krilo nosijo vozički za ograjo' },
+  { id: 'drsna', naziv: 'Drsna', opis: 'Na kolesih po vodilu, vgrajenem v tla' },
+  { id: 'samonosna', naziv: 'Samonosna', opis: 'Brez talnega vodila, na nosilnih vozičkih' },
   { id: 'krilna', naziv: 'Krilna', opis: 'Dve krili na tečajih' },
 ];
 
 export const tipiNadstreskov: { id: TipNadstreska; naziv: string; opis: string }[] = [
-  { id: 'box', naziv: 'Box', opis: 'Ravna streha v okvirju, odtok skozi steber' },
-  { id: 'enokapnica', naziv: 'Enokapnica', opis: 'Streha z naklonom, viden žleb in odtočna cev' },
+  { id: 'box', naziv: 'Box', opis: 'Ravna streha, odvodnjavanje skozi steber' },
+  { id: 'enokapnica', naziv: 'Enokapnica', opis: 'Streha v naklonu, zunanji žleb z odtočno cevjo' },
 ];
 
 export const postavitve: { id: Postavitev; naziv: string; opis: string }[] = [
@@ -165,7 +165,7 @@ export const postavitve: { id: Postavitev; naziv: string; opis: string }[] = [
 export const kritine: { id: Kritina; naziv: string; opis: string }[] = [
   { id: 'steklo', naziv: 'Kaljeno steklo', opis: 'Največ svetlobe' },
   { id: 'polikarbonat', naziv: 'Polikarbonat', opis: 'Lahek, razpršena svetloba' },
-  { id: 'trapezna', naziv: 'Sendvič panel', opis: 'Izoliran, polna senca' },
+  { id: 'trapezna', naziv: 'Sendvič panel', opis: 'Toplotno izoliran, neprosojen' },
   { id: 'folija', naziv: 'Folija Sikaplan', opis: 'Vodotesna membrana za ravno streho' },
 ];
 
@@ -177,7 +177,7 @@ export const kritineZaTip: Record<TipNadstreska, Kritina[]> = {
 
 export const steneTipi: { id: StenaTip; naziv: string; opis: string }[] = [
   { id: 'lamele', naziv: 'Lamele', opis: 'Fiksne aluminijaste lamele' },
-  { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon, več ali manj svetlobe' },
+  { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon lamel' },
 ];
 export const steneSmeri: { id: StenaSmer; naziv: string }[] = [
   { id: 'vertikalne', naziv: 'Vertikalne' },
@@ -361,20 +361,20 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
     `Material: ${naziv(materiali, o.material).toLowerCase()}, ${ralTekst(o.ral)}`,
   ];
   const proste = imaZakljucek(o.polnilo) && o.zakljucek === 'odprto';
-  vrstice.push(proste ? 'Brez ločenih stebrov, vse palice enake (kvadratna cev) in nosilne' : `Razmik nosilnih stebrov: ${m(o.razmikStebrov)}`);
+  vrstice.push(proste ? 'Izvedba brez stebrov, nosilne palice 40 × 40 mm' : `Razmik nosilnih stebrov: ${m(o.razmikStebrov)}`);
   const rp = razmikPolnilaZaPolnilo[o.polnilo];
   if (rp) vrstice.push(`${rp.oznaka}: ${o.razmikPolnila.toLocaleString('sl-SI')} cm`);
   if (imaZakljucek(o.polnilo)) {
-    vrstice.push(o.zakljucek === 'rocaj' ? 'Z zgornjo letvijo čez palice' : `Odprte navzgor brez zgornje letve, tanka šipka na višini ${o.sipka} cm`);
+    vrstice.push(o.zakljucek === 'rocaj' ? 'Z zgornjim ročajem' : `Brez zgornjega ročaja, vezna palica na višini ${o.sipka} cm`);
   }
   if (o.polnilo === 'zarki') vrstice.push(`Žarki: ${naziv(vzorciZarkov, o.zarki).toLowerCase()}`);
   if (o.polnilo === 'perforirana') {
-    vrstice.push(o.vzorec === 'po-meri' ? 'Vzorec izreza: po želji stranke (skico pošljem posebej)' : `Vzorec izreza: ${naziv(vzorci, o.vzorec).toLowerCase()}`);
+    vrstice.push(o.vzorec === 'po-meri' ? 'Vzorec izreza: po meri (priložena skica)' : `Vzorec izreza: ${naziv(vzorci, o.vzorec).toLowerCase()}`);
   }
   if (montazeZaTip[o.tip].length) vrstice.push(`Montaža: ${naziv(montazeZaTip[o.tip], o.montaza).toLowerCase()}`);
   if (o.tip === 'balkonska' && o.montaza === 'stran') {
-    vrstice.push(o.brezStebrickov ? 'Brez stebričkov, pritrjeno na nosilno ploščo' : 'S stebrički na nosilni plošči');
-    vrstice.push(o.podaljsek ? `Ograja sega ${o.podaljsek} cm pod nivo tal balkona` : 'Spodnji rob poravnan s tlemi balkona');
+    vrstice.push(o.brezStebrickov ? 'Montaža brez stebričkov na nosilni profil' : 'Montaža s stebrički na nosilni profil');
+    vrstice.push(o.podaljsek ? `Podaljšek pod nivo tal: ${o.podaljsek} cm` : 'Spodnji rob v ravnini tal balkona');
   }
   if (o.tip === 'dvoriscna') {
     if (o.vrata !== 'brez') vrstice.push(`Vrata: ${naziv(vrataMoznosti, o.vrata).toLowerCase()}, širina ${m(o.sirinaVrat)}${o.pogon ? ', s pogonom' : ''}`);
@@ -390,11 +390,11 @@ export function povzetekNadstreska(n: NadstresekStanje): string[] {
     `Nadstrešek ${naziv(tipiNadstreskov, n.tip).toLowerCase()}, ${naziv(postavitve, n.postavitev).toLowerCase()}`,
     `${m(n.sirina)} × ${m(n.globina)}, svetla višina ${m(n.visina)}`,
     `Kritina: ${naziv(kritine, n.kritina).toLowerCase()}`,
-    n.tip === 'enokapnica' ? 'Viden žleb z odtočno cevjo' : 'Žleb v okvirju, odtok skozi steber',
+    n.tip === 'enokapnica' ? 'Zunanji žleb z odtočno cevjo' : 'Odvodnjavanje skozi steber',
     `Material: ${naziv(materiali, n.material).toLowerCase()}, ${ralTekst(n.ral)}`,
     ...(stene
       ? [`Stranska stena ${stene}: ${naziv(steneTipi, n.stenaTip).toLowerCase()}, ${naziv(steneSmeri, n.stenaSmer).toLowerCase()}, prekati po ${m(PREKAT)}`]
       : []),
-    ...(n.sirina >= 6 ? ['Vmesni steber na sredini širine'] : []),
+    ...(n.sirina >= 6 ? ['Vmesni steber na sredini razpona'] : []),
   ];
 }

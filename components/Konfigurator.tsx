@@ -566,18 +566,18 @@ export default function Konfigurator() {
                     />
                     {og.vzorec === 'po-meri' ? (
                       <p className={`small muted ${s.opomba}`}>
-                        Izrez naredimo po vaši skici, fotografiji ali logotipu. Pripnite jo spodaj v povpraševanju.
+                        Motiv izrežemo po vaši skici, fotografiji ali logotipu. Datoteko priložite povpraševanju.
                       </p>
                     ) : null}
                   </>
                 ) : null}
                 {imaZakljucek(og.polnilo) ? (
                   <>
-                    <p className={s.podnaslov}>Zaključek zgoraj</p>
+                    <p className={s.podnaslov}>Zaključek ograje</p>
                     <Kartice ime="zakljucek" moznosti={zakljucki} vrednost={og.zakljucek} nastavi={(v) => posodobiOg('zakljucek', v)} />
                     {og.zakljucek === 'odprto' ? (
                       <Mera
-                        oznaka="Višina tanke šipke od tal"
+                        oznaka="Višina vezne palice"
                         vrednost={Math.min(Math.max(og.sipka, sipkaRazpon(og.visina).min), sipkaRazpon(og.visina).max)}
                         nastavi={(v) => posodobiOg('sipka', v)}
                         min={sipkaRazpon(og.visina).min}
@@ -591,9 +591,9 @@ export default function Konfigurator() {
                 ) : null}
               </Korak>
 
-              <Korak st={++st} naslov="Razporeditev" namig="Razmik med nosilnimi stebri in med vmesnimi letvicami. Pri balkonih in stopniščih sme biti razmik največ 10 cm, da ne more skozi otroška glava; ob izmeri preverimo, da ograja ustreza predpisom.">
+              <Korak st={++st} naslov="Razporeditev" namig="Razmik med nosilnimi stebri in med polnilom. Pri balkonih in stopniščih je največji dovoljeni svetli razmik 10 cm; skladnost s predpisi preverimo ob izmeri.">
                 {imaZakljucek(og.polnilo) && og.zakljucek === 'odprto' ? (
-                  <p className={`small muted ${s.opomba}`}>Pri odprtih palicah ni ločenih stebrov: vse palice so enako debele in vsaka je nosilna.</p>
+                  <p className={`small muted ${s.opomba}`}>Izvedba brez zgornjega ročaja nima ločenih stebrov: vse palice so enakega prereza (40 × 40 mm) in nosilne.</p>
                 ) : (
                 <Mera
                   oznaka="Razmik nosilnih stebrov"
@@ -620,7 +620,7 @@ export default function Konfigurator() {
                 ) : null}
                 {og.tip !== 'dvoriscna' && razmikPolnilaZaPolnilo[og.polnilo] && og.razmikPolnila > 10 ? (
                   <p className={`small ${s.opozorilo}`} role="status">
-                    Razmik nad 10 cm ne ustreza predpisom za balkone in stopnišča. Primeren je predvsem za dekorativne ograje.
+                    Svetli razmik nad 10 cm ni skladen s predpisi za balkone in stopnišča. Primeren je za dekorativne in vrtne ograje.
                   </p>
                 ) : null}
               </Korak>
@@ -673,12 +673,12 @@ export default function Konfigurator() {
                   <div className={s.stikala}>
                     <label className="potrditev">
                       <input type="checkbox" checked={og.osebniPrehod} onChange={(e) => posodobiOg('osebniPrehod', e.target.checked)} />
-                      <span><strong>Osebni prehod</strong> v enakem polnilu</span>
+                      <span><strong>Osebni prehod</strong> v enaki izvedbi polnila</span>
                     </label>
                     {og.vrata !== 'brez' ? (
                       <label className="potrditev">
                         <input type="checkbox" checked={og.pogon} onChange={(e) => posodobiOg('pogon', e.target.checked)} />
-                        <span><strong>Pogon</strong> s fotocelico, daljincem in signalno lučjo</span>
+                        <span><strong>Avtomatski pogon</strong> s fotocelico, daljinskim upravljalnikom in signalno lučjo</span>
                       </label>
                     ) : null}
                   </div>
@@ -691,16 +691,16 @@ export default function Konfigurator() {
                   {og.tip === 'balkonska' && og.montaza === 'stran' ? (
                     <>
                       <p className={`small muted ${s.opomba}`}>
-                        Na čelo plošče pritrdimo nosilno ploščo v barvi ograje, ograja je montirana nanjo.
+                        Na čelo balkonske plošče namestimo nosilni profil v barvi ograje, nanj pa montiramo ograjo.
                       </p>
                       <div className={s.stikala}>
                         <label className="potrditev">
                           <input type="checkbox" checked={og.brezStebrickov} onChange={(e) => posodobiOg('brezStebrickov', e.target.checked)} />
-                          <span><strong>Brez stebričkov</strong>, polja pritrjena neposredno na nosilno ploščo</span>
+                          <span><strong>Montaža brez stebričkov</strong>: polja so pritrjena neposredno na nosilni profil</span>
                         </label>
                       </div>
                       <Mera
-                        oznaka="Ograja pod nivojem tal balkona"
+                        oznaka="Podaljšek pod nivo tal"
                         vrednost={og.podaljsek}
                         nastavi={(v) => posodobiOg('podaljsek', v)}
                         min={podaljsekRazpon.min}
@@ -710,7 +710,7 @@ export default function Konfigurator() {
                         enota="cm"
                       />
                       <p className={`small muted ${s.opomba}`}>
-                        0 cm: spodnji rob ograje je poravnan s tlemi balkona. Večja vrednost podaljša ograjo navzdol čez čelo plošče.
+                        Pri 0 cm je spodnji rob ograje v ravnini tal balkona. Podaljšek navzdol prekrije čelo plošče.
                       </p>
                     </>
                   ) : null}
