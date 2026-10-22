@@ -571,12 +571,6 @@ export default function Konfigurator() {
                     <p className={`small muted ${s.opomba}`}>Deske so v kovinskem okvirju v barvi ograje. Druge barve lesa dodamo kmalu.</p>
                   </>
                 ) : null}
-                {imaLesenRocaj(og.tip) && !(imaZakljucek(og.polnilo) && og.zakljucek === 'odprto') ? (
-                  <>
-                    <p className={s.podnaslov}>Ročaj</p>
-                    <Kartice ime="rocaj" moznosti={rocaji} vrednost={og.rocaj} nastavi={(v) => posodobiOg('rocaj', v)} />
-                  </>
-                ) : null}
                 {og.polnilo === 'zarki' ? (
                   <>
                     <p className={s.podnaslov}>Izvedba žarkov</p>
@@ -622,6 +616,12 @@ export default function Konfigurator() {
                         enota="cm"
                       />
                     ) : null}
+                  </>
+                ) : null}
+                {imaLesenRocaj(og.tip) && !(imaZakljucek(og.polnilo) && og.zakljucek === 'odprto') ? (
+                  <>
+                    <p className={s.podnaslov}>Material ročaja</p>
+                    <Kartice ime="rocaj" moznosti={rocaji} vrednost={og.rocaj} nastavi={(v) => posodobiOg('rocaj', v)} />
                   </>
                 ) : null}
               </Korak>

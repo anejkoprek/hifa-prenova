@@ -81,7 +81,7 @@ export const polnilaZaTip: Record<TipOgraje, Polnilo[]> = {
   balkonska: ['vertikalne', 'palicna', 'horizontalne', 'zarki', 'perforirana', 'les'],
   dvoriscna: ['horizontalne', 'vertikalne', 'palicna', 'perforirana', 'zarki', 'les'],
   'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'les'],
-  'stopniscna-notranja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
+  'stopniscna-notranja': ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'les'],
   galerijska: ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'les'],
 };
 
