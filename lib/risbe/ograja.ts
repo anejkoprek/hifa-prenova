@@ -85,8 +85,11 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const prekinjeno = !stopnice && dolzina > maxPrikaz + 0.001;
   const podestPravi = stopnice ? Math.max(0, o.podest ?? 0) : 0;
   const P = Math.min(podestPravi, 4);
-  const xPrehod = Ls + gap;
-  const xVrata = Ls + gap + (prehod ? prehod + gap : 0);
+  // drsna in samonosna vrata se odpirajo čez ograjo, zato je osebni prehod na drugi strani vrat;
+  // pri krilnih je prehod med ograjo in vrati
+  const prehodZaVrati = gate > 0 && vrata !== 'krilna';
+  const xVrata = Ls + gap + (prehod && !prehodZaVrati ? prehod + gap : 0);
+  const xPrehod = prehodZaVrati ? xVrata + gate + gap : Ls + gap;
   const skupaj = Ls + P + (prehod ? prehod + gap : 0) + (gate ? gate + gap : 0);
 
   // podlaga pod ograjo
@@ -375,7 +378,8 @@ export function risiOgrajo(o: OgrajaOpts): string {
       for (const x of [a + 0.08, b - 0.08]) for (const yy of [flatT() + 0.15 * s, flatB() - 0.2 * s]) parts.push(`<rect x="${n(X(x) - 3)}" y="${n(yy)}" width="6" height="${n(0.08 * s)}" rx="2" fill="var(--draw-ink)"/>`);
     }
     if (o.pogon) {
-      const mx = X(b) + 0.09 * s;
+      // pogon drsnih vrat je na strani, kamor se vrata odpirajo
+      const mx = vrata === 'krilna' ? X(b) + 0.09 * s : X(a) - 0.39 * s;
       parts.push(`<rect x="${n(mx)}" y="${n(Fy - 0.32 * s)}" width="${n(0.3 * s)}" height="${n(0.32 * s)}" rx="3" fill="var(--draw-ink)"/><circle cx="${n(mx + 0.15 * s)}" cy="${n(Fy - 0.2 * s)}" r="${n(0.04 * s)}" fill="var(--green)"/>`);
     }
   }

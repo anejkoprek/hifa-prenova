@@ -506,10 +506,12 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
       }
       return k;
     };
+    // drsna in samonosna vrata se odpirajo čez ograjo (levo), zato je osebni prehod na drugi strani vrat
+    const prehodZaVrati = vrata && o.vrata !== 'krilna';
     // dovoz za vrati
     if (vrata) {
       const dovoz = tla(sv + 0.6, 3.6, M, M.asfalt);
-      dovoz.position.set(F + prehod + sv / 2, 0.005, -1.9);
+      dovoz.position.set(F + (prehodZaVrati ? 0 : prehod) + sv / 2, 0.005, -1.9);
       g.add(dovoz);
     }
     g.add(odsek(F));
@@ -549,9 +551,9 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
     }
     const visinaVrat = h + podzidek;
     let x = F;
-    if (prehod) {
-      // osebni prehod: krilo, rahlo odprto
-      g.add(steber(x + prehod, 0, visinaVrat + 0.05, M, 0, 0.1));
+    // osebni prehod: krilo, rahlo odprto; px je levi rob prehoda
+    const dodajPrehod = (px: number) => {
+      g.add(steber(px + prehod, 0, visinaVrat + 0.05, M, 0, 0.1));
       const krilo = new THREE.Group();
       const p = polje(prehod - 0.12, visinaVrat - 0.08, 0, o.polnilo, M, { ...op, odprte: false });
       p.position.set(0.02, 0.04, 0);
@@ -559,14 +561,18 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
       krilo.add(skatla(0.04, visinaVrat - 0.06, 0.05, M.kovina, 0.02, visinaVrat / 2, 0));
       krilo.add(skatla(0.04, visinaVrat - 0.06, 0.05, M.kovina, prehod - 0.1, visinaVrat / 2, 0));
       krilo.add(skatla(0.03, 0.16, 0.05, M.motor, prehod - 0.16, visinaVrat * 0.52, 0.04));
-      krilo.position.set(x + 0.04, 0, 0);
+      krilo.position.set(px + 0.04, 0, 0);
       krilo.rotation.y = 0.35;
       g.add(krilo);
+    };
+    if (prehod && !prehodZaVrati) {
+      dodajPrehod(x);
       x += prehod;
     }
+    if (prehod && prehodZaVrati) dodajPrehod(x + sv + 0.05);
     if (vrata) {
       g.add(steber(x + sv + 0.05, 0, visinaVrat + 0.08, M, 0, 0.12));
-      if (!prehod) g.add(steber(x, 0, visinaVrat + 0.08, M, 0, 0.12));
+      if (!prehod || prehodZaVrati) g.add(steber(x, 0, visinaVrat + 0.08, M, 0, 0.12));
       const okvirVrat = (sirina: number, visina: number) => {
         const k = new THREE.Group();
         const p = polje(sirina - 0.08, visina - 0.06, 0, o.polnilo, M, { ...op, odprte: false });
