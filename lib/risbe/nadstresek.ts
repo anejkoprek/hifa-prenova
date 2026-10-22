@@ -44,8 +44,10 @@ export function risiNadstresek(o: NadstresekOpts): string {
   const ksi = Math.sin((32 * Math.PI) / 180) * 0.5;
   const fs = Math.max(W * 0.024, 22);
   const konz = !!o.konzole && o.postavitev === 'ob-objektu' && o.tip === 'box' && !o.stranLevo && !o.stranDesno;
-  const yK = konz ? Math.max(1.0, Math.min(Dm * 0.45, Dm - 1.2)) : 0; // globina stebrov s konzolo (od sprednjega roba)
-  const aK = konz ? Math.min(Dm * 0.32, 1.7, yK - 0.15) : 0;
+  // stebra sta blizu objekta (približno tretjina globine od stene), spredaj ostane dolg previs
+  const odStene = konz ? Math.max(0.9, Dm * 0.3) : 0;
+  const yK = konz ? Dm - odStene : 0; // globina stebrov s konzolo (od sprednjega roba)
+  const aK = konz ? Math.min(odStene - 0.1, 1.8) : 0;
   const hK = aK * 0.85;
   const LES = 'var(--draw-wood)';
 
