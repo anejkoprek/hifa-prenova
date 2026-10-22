@@ -921,11 +921,12 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
   // Stranski konzoli (samo box ob objektu, brez stranskih sten): stebra ob straneh sta pomaknjena nazaj proti
   // objektu, na vrhu imata trikotno konzolo v ravnini stranice (okvir iz materiala konstrukcije, notri lesene letvice),
   // ki nosi streho pred in za stebrom. Spredaj ni stebrov, vmesnega stebra ni.
-  const konz = obObjektu && n.tip === 'box' && n.konzole && !n.stranLevo && !n.stranDesno;
-  // stebra sta blizu objekta (približno tretjina globine od stene), konzola nosi dolg previs strehe naprej
-  const odStene = konz ? Math.max(0.9, D * 0.3) : 0;
+  const konz = obObjektu && n.tip === 'box' && D >= 2 && n.konzole && !n.stranLevo && !n.stranDesno;
+  // stebra sta bližje objektu (okoli 40 % globine od stene), konzola nosi previs strehe naprej;
+  // konzola je skoraj enako velika ne glede na globino (1,0 do 1,25 m na vsako stran stebra)
+  const odStene = konz ? Math.max(1.1, D * 0.4) : 0;
   const zK = konz ? -(D - odStene) : zSt; // z stebrov s konzolo
-  const a = konz ? Math.min(odStene - 0.1, 1.8) : 0; // polovica dolžine konzole ob strehi
+  const a = konz ? Math.min(odStene - 0.1, 1.0 + Math.min(D, 6) * 0.04) : 0; // polovica dolžine konzole ob strehi
   const hK = a * 0.85; // višina konzole
   const xs = konz
     ? [-W / 2 + prerez / 2, W / 2 - prerez / 2]

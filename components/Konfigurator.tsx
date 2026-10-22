@@ -781,7 +781,7 @@ export default function Konfigurator() {
                       </label>
                     </div>
                     <p className={`small muted ${s.opomba}`}>
-                      Stebra ob straneh postavimo blizu objekta, streha pa brez stebrov sega daleč naprej (velik previs, spredaj popolnoma prost prehod). Previs nosi trikotna konzola na vrhu vsakega stebra, vzdolž stranice: okvir iz {ns.material === 'aluminij' ? 'aluminija' : ns.material === 'inox' ? 'inoxa' : 'jekla'} v barvi konstrukcije, notri lesena obloga.
+                      Stebra ob straneh postavimo bližje objektu, streha pa brez stebrov sega naprej (previs, spredaj popolnoma prost prehod). Na voljo od globine 2 m. Previs nosi trikotna konzola na vrhu vsakega stebra, vzdolž stranice: okvir iz {ns.material === 'aluminij' ? 'aluminija' : ns.material === 'inox' ? 'inoxa' : 'jekla'} v barvi konstrukcije, notri lesena obloga.
                     </p>
                     {napakaNs === 'konzole' ? (
                       <p className={s.napakaIzbire} role="alert">

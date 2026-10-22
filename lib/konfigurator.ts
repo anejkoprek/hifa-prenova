@@ -211,8 +211,8 @@ export const steneTipi: { id: StenaTip; naziv: string; opis: string }[] = [
   { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon lamel' },
   { id: 'les', naziv: 'Lesena obloga', opis: 'Lesene letvice v kovinskem okvirju' },
 ];
-/** stranski konzoli: samo box ob objektu (in brez stranskih sten) */
-export const imaKonzole = (n: { postavitev: Postavitev; tip: TipNadstreska }) => n.postavitev === 'ob-objektu' && n.tip === 'box';
+/** stranski konzoli: samo box ob objektu z globino vsaj 2 m (in brez stranskih sten) */
+export const imaKonzole = (n: { postavitev: Postavitev; tip: TipNadstreska; globina: number }) => n.postavitev === 'ob-objektu' && n.tip === 'box' && n.globina >= 2;
 export const konzoleVklopljene = (n: NadstresekStanje) => n.konzole && imaKonzole(n) && !n.stranLevo && !n.stranDesno;
 /** lesen strop samo pod neprosojno kritino */
 export const imaLesenStrop = (k: Kritina) => k === 'trapezna' || k === 'folija';
