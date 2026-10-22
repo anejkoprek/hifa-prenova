@@ -186,12 +186,16 @@ function ograja(
   // spodnji profil in ročaj
   const trak = (fn: Fn, d: number) =>
     out.push(`<polygon points="${[pt(x1, fn(x1)), pt(x2, fn(x2)), pt(x2, fn(x2) + d), pt(x1, fn(x1) + d)].join(' ')}" fill="${barva}" ${ROB}/>`);
-  trak(spodaj, 0.045);
-  if (rocaj) trak((x) => zgoraj(x) - 0.01, 0.055);
-  else trak((x) => zgoraj(x) - 0.04, 0.04);
+  // stebri pod ročajem: ročaj se nariše čeznje in sega čez krajna stebra
+  const vrhSt = rocaj ? 0.045 : 0;
   for (const x of xs) {
-    out.push(`<polygon points="${[pt(x - stebri / 2, spodaj(x) - 0.06), pt(x + stebri / 2, spodaj(x) - 0.06), pt(x + stebri / 2, zgoraj(x) + 0.045), pt(x - stebri / 2, zgoraj(x) + 0.045)].join(' ')}" fill="${barva}" ${ROB}/>`);
+    out.push(`<polygon points="${[pt(x - stebri / 2, spodaj(x) - 0.06), pt(x + stebri / 2, spodaj(x) - 0.06), pt(x + stebri / 2, zgoraj(x) + vrhSt), pt(x - stebri / 2, zgoraj(x) + vrhSt)].join(' ')}" fill="${barva}" ${ROB}/>`);
   }
+  trak(spodaj, 0.045);
+  const traku = (fn: Fn, d: number) =>
+    out.push(`<polygon points="${[pt(x1 - stebri / 2, fn(x1 - stebri / 2)), pt(x2 + stebri / 2, fn(x2 + stebri / 2)), pt(x2 + stebri / 2, fn(x2 + stebri / 2) + d), pt(x1 - stebri / 2, fn(x1 - stebri / 2) + d)].join(' ')}" fill="${barva}" ${ROB}/>`);
+  if (rocaj) traku((x) => zgoraj(x) - 0.01, 0.055);
+  else traku((x) => zgoraj(x) - 0.04, 0.04);
 }
 
 // ---------- okna in vrata ----------

@@ -46,7 +46,7 @@ import {
   smeriLesa,
   rocaji,
   imaLesenRocaj,
-  previsRazpon,
+  imaKonzole,
   imaLesenStrop,
   naPlosci,
   type NadstresekStanje,
@@ -413,7 +413,7 @@ export default function Konfigurator() {
       stranDesno: ns.stranDesno,
       stenaTip: ns.stenaTip,
       stenaSmer: ns.stenaSmer,
-      previs: ns.previs,
+      konzole: ns.konzole && imaKonzole(ns),
       lesenStrop: ns.lesenStrop && imaLesenStrop(ns.kritina),
       id: 'konf-ns',
     });
@@ -441,7 +441,7 @@ export default function Konfigurator() {
           ['Kritina', naziv(kritine, ns.kritina)],
           ['Material', naziv(materiali, ns.material)],
           ['Stene', [ns.stranLevo && 'levo', ns.stranDesno && 'desno'].filter(Boolean).join(' in ') || 'brez'],
-          ...(ns.previs > 0 ? [['Previs spredaj', `${m(ns.previs)} m, konzola z leseno oblogo`] as [string, string]] : []),
+          ...(ns.konzole && imaKonzole(ns) ? [['Stebri', 'navznoter, s trikotnima konzolama'] as [string, string]] : []),
           ...(ns.lesenStrop && imaLesenStrop(ns.kritina) ? [['Strop', 'lesena obloga'] as [string, string]] : []),
         ];
   const povzetekTekst = povzetek.join('; ');
@@ -755,25 +755,24 @@ export default function Konfigurator() {
               <Korak st={++st} naslov="Postavitev">
                 <Kartice ime="ns-postavitev" moznosti={postavitve} vrednost={ns.postavitev} nastavi={(v) => posodobiNs('postavitev', v)} />
               </Korak>
-              <Korak st={++st} naslov="Mere" namig="Za en avto zadošča približno 3 × 5,5 m, za dva 5,5 × 5,5 m. Od širine 6 m dalje dodamo vmesni steber.">
+              <Korak st={++st} naslov="Mere" namig="Za en avto zadošča približno 3 × 5,5 m, za dva 5,5 × 5,5 m. Od širine 6 m dalje dodamo vmesni steber; ob objektu ga lahko nadomestita trikotni konzoli.">
                 <Mera oznaka="Širina" vrednost={ns.sirina} nastavi={(v) => posodobiNs('sirina', v)} min={2} max={12} korak={0.1} enota="m" />
                 <Mera oznaka="Globina" vrednost={ns.globina} nastavi={(v) => posodobiNs('globina', v)} min={1.5} max={8} korak={0.1} enota="m" />
                 <Mera oznaka="Svetla višina" vrednost={ns.visina} nastavi={(v) => posodobiNs('visina', v)} min={2.1} max={3.2} korak={0.05} enota="m" />
-                <Mera
-                  oznaka="Previs strehe spredaj"
-                  vrednost={ns.previs}
-                  nastavi={(v) => posodobiNs('previs', v)}
-                  min={previsRazpon.min}
-                  max={Math.min(previsRazpon.max, Math.max(0, ns.globina - 1))}
-                  korak={0.05}
-                  gumb={0.1}
-                  enota="m"
-                />
-                <p className={`small muted ${s.opomba}`}>
-                  {ns.previs > 0
-                    ? `Sprednji stebri so pomaknjeni ${m(ns.previs)} m nazaj. Streho nad previsom nosi trikotna konzola na vsakem stebru: okvir iz ${ns.material === 'aluminij' ? 'aluminija' : ns.material === 'inox' ? 'inoxa' : 'jekla'} v barvi konstrukcije, notri lesena obloga.`
-                    : 'Pri 0 m stojijo sprednji stebri na robu strehe. S previsom jih pomaknemo nazaj, da je spredaj več prostora (npr. za odpiranje vrat avtomobila).'}
-                </p>
+                {imaKonzole(ns) ? (
+                  <>
+                    <div className={s.stikala}>
+                      <label className="potrditev">
+                        <input type="checkbox" checked={ns.konzole} onChange={(e) => posodobiNs('konzole', e.target.checked)} />
+                        <span><strong>Brez vmesnega stebra, s trikotnima konzolama</strong></span>
+                      </label>
+                    </div>
+                    <p className={`small muted ${s.opomba}`}>
+                      Sprednja stebra pomaknemo navznoter, streha ju na obeh straneh presega. Na vrhu vsakega je trikotna konzola, ki nosi
+                      sprednji nosilec: okvir iz {ns.material === 'aluminij' ? 'aluminija' : ns.material === 'inox' ? 'inoxa' : 'jekla'} v barvi konstrukcije, notri lesena obloga. Spredaj ostane prost prehod brez stebra na sredini.
+                    </p>
+                  </>
+                ) : null}
               </Korak>
               <Korak st={++st} naslov="Kritina">
                 <Kartice ime="ns-kritina" moznosti={kritine.filter((k) => kritineZaTip[ns.tip].includes(k.id))} vrednost={ns.kritina} nastavi={(v) => posodobiNs('kritina', v)} stolpci={3} />

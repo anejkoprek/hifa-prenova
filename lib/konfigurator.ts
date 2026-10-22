@@ -59,8 +59,8 @@ export type NadstresekStanje = {
   stranDesno: boolean;
   stenaTip: StenaTip;
   stenaSmer: StenaSmer;
-  /** previs strehe pred sprednjimi stebri (m); nosilci dobijo trikotno konzolo z leseno oblogo */
-  previs: number;
+  /** ob objektu in od širine 6 m: namesto vmesnega stebra dva navznoter pomaknjena stebra s trikotno konzolo */
+  konzole: boolean;
   /** lesena obloga stropa pod kritino */
   lesenStrop: boolean;
 };
@@ -78,9 +78,9 @@ export { naPlosci };
 export const polnilaZaTip: Record<TipOgraje, Polnilo[]> = {
   balkonska: ['vertikalne', 'palicna', 'horizontalne', 'zarki', 'perforirana', 'les'],
   dvoriscna: ['horizontalne', 'vertikalne', 'palicna', 'perforirana', 'zarki', 'les'],
-  'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
+  'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'les'],
   'stopniscna-notranja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
-  galerijska: ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
+  galerijska: ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'les'],
 };
 
 /** razmik nosilnih stebrov (m) */
@@ -209,8 +209,8 @@ export const steneTipi: { id: StenaTip; naziv: string; opis: string }[] = [
   { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon lamel' },
   { id: 'les', naziv: 'Lesena obloga', opis: 'Lesene letvice v kovinskem okvirju' },
 ];
-/** previs spredaj: od 0 (stebri na robu) do 1,5 m */
-export const previsRazpon = { min: 0, max: 1.5, privzeto: 0 };
+/** trikotne konzole namesto vmesnega stebra: samo ob objektu in od širine 6 m */
+export const imaKonzole = (n: { postavitev: Postavitev; sirina: number }) => n.postavitev === 'ob-objektu' && n.sirina >= 6;
 /** lesen strop samo pod neprosojno kritino */
 export const imaLesenStrop = (k: Kritina) => k === 'trapezna' || k === 'folija';
 export const steneSmeri: { id: StenaSmer; naziv: string }[] = [
@@ -257,7 +257,7 @@ export const privzetNadstresek: NadstresekStanje = {
   stranDesno: false,
   stenaTip: 'lamele',
   stenaSmer: 'vertikalne',
-  previs: 0,
+  konzole: false,
   lesenStrop: false,
 };
 
@@ -323,7 +323,7 @@ export function nadstresekIzUrl(q: URLSearchParams): NadstresekStanje {
     stranDesno: q.get('desno') === '1',
     stenaTip: izbira(q.get('stena'), ['lamele', 'mehanske', 'les'] as const, 'lamele'),
     stenaSmer: izbira(q.get('smer'), ['vertikalne', 'horizontalne'] as const, 'vertikalne'),
-    previs: omeji(stevilo(q, 'previs', 0), previsRazpon.min, previsRazpon.max),
+    konzole: q.get('konzole') === '1',
     lesenStrop: q.get('strop') === 'les',
   };
 }
@@ -382,7 +382,7 @@ export function nadstresekVUrl(n: NadstresekStanje): string {
     q.set('stena', n.stenaTip);
     q.set('smer', n.stenaSmer);
   }
-  if (n.previs > 0) q.set('previs', String(n.previs));
+  if (n.konzole && imaKonzole(n)) q.set('konzole', '1');
   if (n.lesenStrop && imaLesenStrop(n.kritina)) q.set('strop', 'les');
   return q.toString();
 }
@@ -440,10 +440,10 @@ export function povzetekNadstreska(n: NadstresekStanje): string[] {
     ...(stene
       ? [`Stranska stena ${stene}: ${naziv(steneTipi, n.stenaTip).toLowerCase()}, ${naziv(steneSmeri, n.stenaSmer).toLowerCase()}, prekati po ${m(PREKAT)}`]
       : []),
-    ...(n.previs > 0
-      ? [`Previs spredaj ${m(n.previs)}, stebri s trikotno konzolo (okvir iz konstrukcije, lesena obloga)`]
+    ...(n.konzole && imaKonzole(n)
+      ? ['Brez vmesnega stebra: sprednja stebra pomaknjena navznoter, s trikotnima konzolama (okvir iz konstrukcije, lesena obloga)']
       : []),
     ...(n.lesenStrop && imaLesenStrop(n.kritina) ? ['Lesena obloga stropa'] : []),
-    ...(n.sirina >= 6 ? ['Vmesni steber na sredini razpona'] : []),
+    ...(n.sirina >= 6 && !(n.konzole && imaKonzole(n)) ? ['Vmesni steber na sredini razpona'] : []),
   ];
 }

@@ -266,10 +266,12 @@ export function risiOgrajo(o: OgrajaOpts): string {
   }
 
   // spodnji in zgornji profil
-  const rail = (yFn: (x: number) => number, debelina: number, cls = '') => {
+  const rail = (yFn: (x: number) => number, debelina: number, cls = '', cez = 0) => {
     const odseki: [number, number][] = P > 0.05 ? [[0, Ls], [Ls, Ls + P]] : [[0, Ls]];
     for (const [x1, x2] of odseki) {
-      const pts: [number, number][] = [[X(x1), yFn(x1)], [X(x2), yFn(x2)], [X(x2), yFn(x2) + debelina * s], [X(x1), yFn(x1) + debelina * s]];
+      // cez: zgornji ročaj sega čez krajna stebra, da ju pokrije
+      const a = X(x1) - cez * s, b = X(x2) + cez * s;
+      const pts: [number, number][] = [[a, yFn(x1)], [b, yFn(x2)], [b, yFn(x2) + debelina * s], [a, yFn(x1) + debelina * s]];
       parts.push(`<polygon class="${cls}" points="${poly(pts)}" fill="${barva}" stroke="${edge}" stroke-width="0.7"/>`);
     }
   };
@@ -277,24 +279,6 @@ export function risiOgrajo(o: OgrajaOpts): string {
     // brez spodnje letve
   } else if (o.polnilo !== 'steklo') rail((x) => Yb(x) - 0.04 * s, 0.04);
   else rail((x) => Yb(x) - 0.03 * s, 0.03);
-  if (odprte) {
-    // odprte palice: brez ročaja, palice povezuje vodoravna šipka
-    const hs = Math.min(Math.max((o.sipka ?? visina * 100 - 12) / 100, visina / 2), visina - 0.06);
-    rail((x) => Fy - (stopOff + Math.min(x, Ls) * r + hs) * s - 0.006 * s, 0.012);
-  } else if (o.rocaj === 'les') {
-    // lesen ročaj čez vrh (notranje ograje)
-    const ry = (x: number) => Yt(x) - 0.03 * s;
-    const odseki: [number, number][] = P > 0.05 ? [[0, Ls], [Ls, Ls + P]] : [[0, Ls]];
-    for (const [x1, x2] of odseki) {
-      parts.push(`<polygon points="${poly([[X(x1) - 0.03 * s, ry(x1)], [X(x2) + 0.03 * s, ry(x2)], [X(x2) + 0.03 * s, ry(x2) + 0.05 * s], [X(x1) - 0.03 * s, ry(x1) + 0.05 * s]])}" fill="var(--draw-wood)" stroke="${edge}" stroke-width="0.8"/>`);
-    }
-  } else if (balkonSlog) {
-    // ročaj nekoliko nad polnilom
-    rail((x) => Yt(x) - 0.012 * s, 0.05);
-  } else {
-    rail((x) => Yt(x), 0.035);
-  }
-
   // nosilna plošča na čelu balkona (montaža s strani), v barvi ograje
   if (stran) {
     parts.push(`<rect x="${n(X(-0.05))}" y="${n(Fy + 0.015 * s)}" width="${n((Ls + 0.1) * s)}" height="${n(0.19 * s)}" fill="${barva}" stroke="${edge}" stroke-width="0.8" style="filter:brightness(0.92)"/>`);
@@ -307,7 +291,8 @@ export function risiOgrajo(o: OgrajaOpts): string {
 
   // stebri
   for (const x of brezStebrov || odprte ? [] : posts) {
-    const top = balkonSlog ? Yt(x) - 0.012 * s : Yt(x) - 0.01 * s;
+    // stebri se končajo pod zgornjim ročajem, ročaj jih pokrije
+    const top = Yt(x);
     let bottom = stopnice ? Yb(x) + clearance * s : Fy;
     if (stran) bottom = Math.max(Fy + 0.17 * s, Yb(x) + 0.02 * s);
     const px = X(x) - (pw * s) / 2;
@@ -321,6 +306,26 @@ export function risiOgrajo(o: OgrajaOpts): string {
       parts.push(`<rect x="${n(px)}" y="${n(Fy)}" width="${n(pw * s)}" height="${n(0.35 * s)}" fill="none" stroke="var(--draw-line)" stroke-dasharray="4 3" stroke-width="1"/>`);
     }
   }
+
+  // zgornji ročaj (ali šipka pri odprtih palicah) se nariše za stebri, da jih pokrije
+  if (odprte) {
+    // odprte palice: brez ročaja, palice povezuje vodoravna šipka
+    const hs = Math.min(Math.max((o.sipka ?? visina * 100 - 12) / 100, visina / 2), visina - 0.06);
+    rail((x) => Fy - (stopOff + Math.min(x, Ls) * r + hs) * s - 0.006 * s, 0.012);
+  } else if (o.rocaj === 'les') {
+    // lesen ročaj čez vrh (notranje ograje)
+    const ry = (x: number) => Yt(x) - 0.03 * s;
+    const odseki: [number, number][] = P > 0.05 ? [[0, Ls], [Ls, Ls + P]] : [[0, Ls]];
+    for (const [x1, x2] of odseki) {
+      parts.push(`<polygon points="${poly([[X(x1) - (pw / 2 + 0.02) * s, ry(x1)], [X(x2) + (pw / 2 + 0.02) * s, ry(x2)], [X(x2) + (pw / 2 + 0.02) * s, ry(x2) + 0.05 * s], [X(x1) - (pw / 2 + 0.02) * s, ry(x1) + 0.05 * s]])}" fill="var(--draw-wood)" stroke="${edge}" stroke-width="0.8"/>`);
+    }
+  } else if (balkonSlog) {
+    // ročaj nekoliko nad polnilom
+    rail((x) => Yt(x) - 0.012 * s, 0.05, '', pw / 2 + 0.005);
+  } else {
+    rail((x) => Yt(x) - 0.01 * s, 0.045, '', pw / 2 + 0.005);
+  }
+
 
   // prekinitev
   if (prekinjeno) {
