@@ -16,7 +16,7 @@ export interface NadstresekOpts {
   stranLevo?: boolean;
   stranDesno?: boolean;
   stenaTip?: 'lamele' | 'mehanske' | 'les';
-  /** ob objektu od 6 m: stebra navznoter s trikotnima konzolama namesto vmesnega stebra */
+  /** ob objektu od 6 m, brez sten: stebra ob straneh pomaknjena nazaj, s trikotnima konzolama vzdolž stranic */
   konzole?: boolean;
   lesenStrop?: boolean;
   stenaSmer?: 'vertikalne' | 'horizontalne';
@@ -42,10 +42,10 @@ export function risiNadstresek(o: NadstresekOpts): string {
   const kos = Math.cos((32 * Math.PI) / 180) * 0.5;
   const ksi = Math.sin((32 * Math.PI) / 180) * 0.5;
   const fs = Math.max(W * 0.024, 22);
-  const konz = !!o.konzole && o.postavitev === 'ob-objektu' && Wm >= 6;
-  const odmik = konz ? Math.min(Wm * 0.17, 1.6) : 0;
-  const aK = konz ? Math.min(1.1, Wm * 0.1) : 0;
-  const hK = aK * 1.3;
+  const konz = !!o.konzole && o.postavitev === 'ob-objektu' && Wm >= 6 && !o.stranLevo && !o.stranDesno;
+  const yK = konz ? Math.max(1.0, Math.min(Dm * 0.45, Dm - 1.2)) : 0; // globina stebrov s konzolo (od sprednjega roba)
+  const aK = konz ? Math.min(Dm * 0.32, 1.7, yK - 0.15) : 0;
+  const hK = aK * 0.85;
   const LES = 'var(--draw-wood)';
 
   // ---- normalizacija: najprej zberemo ključne točke ----
@@ -94,7 +94,7 @@ export function risiNadstresek(o: NadstresekOpts): string {
 
   // stebri: od širine 6 m dalje vmesni steber na sredini
   const nSpans = Wm >= 6 && !konz ? 2 : 1;
-  const xs = konz ? [odmik, Wm - odmik] : Array.from({ length: nSpans + 1 }, (_, i) => (i * Wm) / nSpans);
+  const xs = Array.from({ length: nSpans + 1 }, (_, i) => (i * Wm) / nSpans);
   const pw = 0.11;
   const steber = (x: number, y: number) => {
     const x0 = Math.min(Math.max(x - pw / 2, 0), Wm - pw);
@@ -140,6 +140,26 @@ export function risiNadstresek(o: NadstresekOpts): string {
     out.push(line([x, y0, z0], [x, y1, z0], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.05 * s))}" style="filter:brightness(0.85)"`));
   };
   if (o.stranLevo) stena(0.02);
+
+  // s stranskima konzolama stojita stebra ob straneh pomaknjena nazaj, konzola je vzdolž stranice;
+  // levi je pod streho (nariše se pred njo), desni je na vidni strani (za njo)
+  const risiKonzolo = (x: number) => {
+    const zSp = (y: number) => hp + (rise * y) / Dm;
+    const xc = Math.min(Math.max(x, pw / 2), Wm - pw / 2);
+    const vrh = zSp(yK) - hK;
+    const A: P3 = [xc, yK - aK, zSp(yK - aK)], B: P3 = [xc, yK + aK, zSp(yK + aK)], C: P3 = [xc, yK, vrh];
+    const lid = `${uid}-k-${Math.round(xc * 100)}`;
+    defs.push(`<clipPath id="${lid}"><polygon points="${pts([A, B, C])}"/></clipPath>`);
+    const le: string[] = [`<polygon points="${pts([A, B, C])}" fill="${LES}"/>`];
+    for (let y = A[1] + 0.07; y < B[1]; y += 0.075) le.push(line([xc, y, vrh], [xc, y, zSp(y)], 'stroke="var(--draw-edge)" stroke-width="0.6" opacity="0.55"'));
+    const x0 = Math.min(Math.max(x - pw / 2, 0), Wm - pw);
+    out.push(`<polygon points="${pts([[x0 + pw, yK, 0], [x0 + pw, yK + pw, 0], [x0 + pw, yK + pw, vrh], [x0 + pw, yK, vrh]])}" fill="${barva}" ${edge} style="filter:brightness(0.8)"/>`);
+    out.push(`<polygon points="${pts([[x0, yK, 0], [x0 + pw, yK, 0], [x0 + pw, yK, vrh], [x0, yK, vrh]])}" fill="${barva}" ${edge}/>`);
+    out.push(`<g clip-path="url(#${lid})">${le.join('')}</g>`);
+    const w = n(Math.max(2.5, 0.06 * s));
+    out.push(`<path d="M ${P(A).map(n).join(' ')} L ${P(C).map(n).join(' ')} L ${P(B).map(n).join(' ')}" fill="none" stroke="${barva}" stroke-width="${w}" stroke-linejoin="round"/>`);
+  };
+  if (konz) risiKonzolo(xs[0]);
 
   // ---- streha ----
   const zF = hp + tF; // vrh strehe spredaj
@@ -204,40 +224,28 @@ export function risiNadstresek(o: NadstresekOpts): string {
 
   if (o.stranDesno) stena(Wm - 0.02);
 
-  // sprednji stebri; s konzolami pomaknjena navznoter, na vrhu trikotna konzola pod sprednjim nosilcem
-  if (konz) {
-    xs.forEach((xc) => {
-      const vrh = hp - hK;
-      const A: P3 = [xc - aK, 0, hp], B: P3 = [xc + aK, 0, hp], C: P3 = [xc, 0, vrh];
-      const lid = `${uid}-k-${Math.round(xc * 100)}`;
-      defs.push(`<clipPath id="${lid}"><polygon points="${pts([A, B, C])}"/></clipPath>`);
-      const le: string[] = [`<polygon points="${pts([A, B, C])}" fill="${LES}"/>`];
-      for (let x = A[0] + 0.07; x < B[0]; x += 0.07) le.push(line([x, 0, vrh], [x, 0, hp], 'stroke="var(--draw-edge)" stroke-width="0.6" opacity="0.55"'));
-      // steber do konice konzole
-      const x0 = xc - pw / 2;
-      out.push(`<polygon points="${pts([[x0 + pw, 0, 0], [x0 + pw, pw, 0], [x0 + pw, pw, vrh], [x0 + pw, 0, vrh]])}" fill="${barva}" ${edge} style="filter:brightness(0.8)"/>`);
-      out.push(`<polygon points="${pts([[x0, 0, 0], [x0 + pw, 0, 0], [x0 + pw, 0, vrh], [x0, 0, vrh]])}" fill="${barva}" ${edge}/>`);
-      out.push(`<g clip-path="url(#${lid})">${le.join('')}</g>`);
-      const w = n(Math.max(2.5, 0.06 * s));
-      out.push(`<path d="M ${P(A).map(n).join(' ')} L ${P(C).map(n).join(' ')} L ${P(B).map(n).join(' ')}" fill="none" stroke="${barva}" stroke-width="${w}" stroke-linejoin="round"/>`);
-    });
-  } else xs.forEach((x) => steber(x, 0));
+  // sprednji stebri (desna konzola za streho)
+  if (konz) risiKonzolo(xs[xs.length - 1]);
+  else xs.forEach((x) => steber(x, 0));
   if (o.tip === 'enokapnica') {
     // odtočna cev: iz dna žleba z labodjim vratom k stebru, navpično ob stebru z objemkami, spodaj izlivno koleno
-    const cx = xs[xs.length - 1] + 0.09 + (konz ? pw / 2 : 0), yc = -0.06, w = n(Math.max(3, 0.075 * s));
-    const yp = yc;
-    const xI = Math.min(Wm - 0.05, xs[xs.length - 1] + 0.1); // iztok nad desnim stebrom
-    const pot: P3[] = [[xI, -0.15, hp - 0.05], [xI, -0.15, hp - 0.14], [cx, yp, hp - 0.36], [cx, yp, 0.24], [cx, yp - 0.16, 0.08]];
+    const cx = Wm + 0.09, yc = -0.06, w = n(Math.max(3, 0.075 * s));
+    // s stranskima konzolama je steber pomaknjen nazaj: cev gre ob strani pod streho do njega
+    const yp = konz ? yK + 0.06 : yc;
+    const xI = Wm - 0.05;
+    const pot: P3[] = konz
+      ? [[xI, -0.15, hp - 0.05], [xI, -0.15, hp - 0.14], [cx, 0.05, hp - 0.2], [cx, yp, hp - 0.28], [cx, yp, 0.24], [cx, yp - 0.16, 0.08]]
+      : [[xI, -0.15, hp - 0.05], [xI, -0.15, hp - 0.14], [cx, yp, hp - 0.36], [cx, yp, 0.24], [cx, yp - 0.16, 0.08]];
     const d = 'M ' + pot.map((p) => P(p).map(n).join(' ')).join(' L ');
     out.push(`<path d="${d}" fill="none" stroke="var(--draw-edge)" stroke-width="${n(+w + 1.6)}" stroke-linejoin="round" stroke-linecap="round"/>`);
     out.push(`<path d="${d}" fill="none" stroke="${barva}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" style="filter:brightness(1.3)"/>`);
     out.push(`<path d="${d}" fill="none" stroke="var(--draw-glare)" stroke-width="1" stroke-linejoin="round" opacity="0.7" transform="translate(-${n(+w / 4)} 0)"/>`);
-    for (const z of [0.7, 1.6]) if (z < hp - 0.4 - hK) out.push(line([cx - 0.07, yp, z], [cx + 0.07, yp, z], `stroke="var(--draw-edge)" stroke-width="${n(Math.max(2, 0.025 * s))}"`));
+    for (const z of [0.7, 1.6]) if (z < hp - 0.4) out.push(line([cx - 0.07, yp, z], [cx + 0.07, yp, z], `stroke="var(--draw-edge)" stroke-width="${n(Math.max(2, 0.025 * s))}"`));
   } else {
     // box: voda teče skozi steber, spodaj kratek pravokoten izliv
     for (const x of [xs[0], xs[xs.length - 1]]) {
       const xc = Math.min(Math.max(x, pw / 2), Wm - pw / 2);
-      const y0 = 0;
+      const y0 = konz ? yK : 0;
       out.push(`<polygon points="${pts([[xc - 0.025, y0, 0.18], [xc + 0.025, y0, 0.18], [xc + 0.025, y0 - 0.13, 0.15], [xc - 0.025, y0 - 0.13, 0.15]])}" fill="${barva}" stroke="var(--draw-edge)" stroke-width="0.8" style="filter:brightness(1.25)"/>`);
       out.push(`<polygon points="${pts([[xc - 0.025, y0 - 0.13, 0.15], [xc + 0.025, y0 - 0.13, 0.15], [xc + 0.025, y0 - 0.13, 0.12], [xc - 0.025, y0 - 0.13, 0.12]])}" fill="#15181a"/>`);
     }

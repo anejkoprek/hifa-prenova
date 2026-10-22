@@ -59,7 +59,7 @@ export type NadstresekStanje = {
   stranDesno: boolean;
   stenaTip: StenaTip;
   stenaSmer: StenaSmer;
-  /** ob objektu in od širine 6 m: namesto vmesnega stebra dva navznoter pomaknjena stebra s trikotno konzolo */
+  /** ob objektu, od širine 6 m, brez stranskih sten: stebra ob straneh pomaknjena nazaj proti objektu, s trikotno konzolo */
   konzole: boolean;
   /** lesena obloga stropa pod kritino */
   lesenStrop: boolean;
@@ -209,8 +209,9 @@ export const steneTipi: { id: StenaTip; naziv: string; opis: string }[] = [
   { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon lamel' },
   { id: 'les', naziv: 'Lesena obloga', opis: 'Lesene letvice v kovinskem okvirju' },
 ];
-/** trikotne konzole namesto vmesnega stebra: samo ob objektu in od širine 6 m */
+/** stranski konzoli: samo ob objektu, od širine 6 m in brez stranskih sten */
 export const imaKonzole = (n: { postavitev: Postavitev; sirina: number }) => n.postavitev === 'ob-objektu' && n.sirina >= 6;
+export const konzoleVklopljene = (n: NadstresekStanje) => n.konzole && imaKonzole(n) && !n.stranLevo && !n.stranDesno;
 /** lesen strop samo pod neprosojno kritino */
 export const imaLesenStrop = (k: Kritina) => k === 'trapezna' || k === 'folija';
 export const steneSmeri: { id: StenaSmer; naziv: string }[] = [
@@ -382,7 +383,7 @@ export function nadstresekVUrl(n: NadstresekStanje): string {
     q.set('stena', n.stenaTip);
     q.set('smer', n.stenaSmer);
   }
-  if (n.konzole && imaKonzole(n)) q.set('konzole', '1');
+  if (konzoleVklopljene(n)) q.set('konzole', '1');
   if (n.lesenStrop && imaLesenStrop(n.kritina)) q.set('strop', 'les');
   return q.toString();
 }
@@ -440,10 +441,10 @@ export function povzetekNadstreska(n: NadstresekStanje): string[] {
     ...(stene
       ? [`Stranska stena ${stene}: ${naziv(steneTipi, n.stenaTip).toLowerCase()}, ${naziv(steneSmeri, n.stenaSmer).toLowerCase()}, prekati po ${m(PREKAT)}`]
       : []),
-    ...(n.konzole && imaKonzole(n)
-      ? ['Brez vmesnega stebra: sprednja stebra pomaknjena navznoter, s trikotnima konzolama (okvir iz konstrukcije, lesena obloga)']
+    ...(konzoleVklopljene(n)
+      ? ['Stebra ob straneh pomaknjena nazaj proti objektu, s trikotnima konzolama (okvir iz konstrukcije, lesena obloga); spredaj brez stebrov']
       : []),
     ...(n.lesenStrop && imaLesenStrop(n.kritina) ? ['Lesena obloga stropa'] : []),
-    ...(n.sirina >= 6 && !(n.konzole && imaKonzole(n)) ? ['Vmesni steber na sredini razpona'] : []),
+    ...(n.sirina >= 6 && !konzoleVklopljene(n) ? ['Vmesni steber na sredini razpona'] : []),
   ];
 }

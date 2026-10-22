@@ -750,9 +750,10 @@ function cev(a: THREE.Vector3, b: THREE.Vector3, r: number, m: THREE.Material) {
  * Viden žleb enokapnice: polkrožen profil z zavihanim robom, zaključni kapi, kljuke in
  * odtočna cev z »labodjim vratom« ob desnem sprednjem stebru ter izlivnim kolenom spodaj.
  */
-/** xStebra: x desnega sprednjega stebra (pri konzolah je pomaknjen navznoter, cev se spusti ob njem) */
-function zlebEnokapnice(W: number, yS: number, M: Materiali, xStebra = W / 2 - 0.06) {
-  const dz = 0;
+/** zStebra: z desnega stebra (pri stranskih konzolah je pomaknjen nazaj proti objektu, cev gre pod streho do njega) */
+function zlebEnokapnice(W: number, yS: number, M: Materiali, zStebra = -0.06) {
+  const xStebra = W / 2 - 0.06;
+  const dz = zStebra + 0.06;
   const g = new THREE.Group();
   const m = materialZleba(M);
   const R = 0.07, t = 0.005;
@@ -797,18 +798,22 @@ function zlebEnokapnice(W: number, yS: number, M: Materiali, xStebra = W / 2 - 0
   const xI = Math.min(W / 2 - 0.02, xStebra + 0.06); // iztok iz žleba nad stebrom
   const p0 = new THREE.Vector3(xI, yC - R + 0.01, zC);
   const p1 = new THREE.Vector3(xI, yC - R - 0.08, zC);
-  const p2 = new THREE.Vector3(xC, yC - R - 0.3, 0.05 + dz);
+  // pri stebru, pomaknjenem nazaj, gre cev najprej ob strani pod streho do stebra
+  const nazaj = dz < -0.2;
+  const p2 = new THREE.Vector3(xC, yC - R - (nazaj ? 0.16 : 0.3), nazaj ? zC - 0.08 : 0.05 + dz);
+  const p2b = new THREE.Vector3(xC, yC - R - 0.24, 0.05 + dz);
   const p3 = new THREE.Vector3(xC, 0.24, 0.05 + dz);
   const p4 = new THREE.Vector3(xC, 0.1, 0.17 + dz);
-  for (const [a, b] of [[p0, p1], [p1, p2], [p2, p3], [p3, p4]] as const) g.add(cev(a, b, rC, m));
-  for (const p of [p1, p2, p3]) {
+  const tocke = nazaj ? [p0, p1, p2, p2b, p3, p4] : [p0, p1, p2, p3, p4];
+  for (let i = 0; i < tocke.length - 1; i++) g.add(cev(tocke[i], tocke[i + 1], rC, m));
+  for (const p of tocke.slice(1, -1)) {
     const zgib = new THREE.Mesh(new THREE.SphereGeometry(rC, 16, 12), m);
     zgib.position.copy(p);
     g.add(zgib);
   }
   // objemke cevi na steber
   for (const y of [0.7, 1.6]) {
-    if (y > p2.y) continue;
+    if (y > p2b.y - 0.3) continue;
     const obj = new THREE.Mesh(new THREE.TorusGeometry(rC + 0.006, 0.007, 6, 18), M.kovina);
     obj.rotation.x = Math.PI / 2;
     obj.position.set(xC, y, 0.05 + dz);
@@ -820,33 +825,50 @@ function zlebEnokapnice(W: number, yS: number, M: Materiali, xStebra = W / 2 - 0
 
 /** box: voda teče skozi steber, spodaj iz sprednje stranice pogleda kratek pravokoten izliv */
 /**
- * Trikotna konzola na vrhu stebra v ravnini sprednjega nosilca: konica na stebru, zgornji rob pod nosilcem
- * od x − a do x + a. Okvir iz kovine konstrukcije, notri pokončne lesene letvice.
+ * Trikotna konzola na vrhu stebra v ravnini stranice (vzdolž globine): konica na stebru, zgornji rob pod streho
+ * od zSt − a do zSt + a. Okvir iz kovine konstrukcije, notri pokončne lesene letvice.
  */
-function konzola(x: number, z: number, a: number, vrh: number, yNosilca: number, M: Materiali) {
+function konzola(x: number, zSt: number, a: number, vrh: number, strehaPri: (z: number) => number, M: Materiali) {
   const g = new THREE.Group();
-  const okvir = 0.07;
-  const krak = (x1: number, y1: number, x2: number, y2: number, d = okvir) => {
-    const dol = Math.hypot(x2 - x1, y2 - y1);
-    const m = new THREE.Mesh(new THREE.BoxGeometry(dol, d, d), M.kovina);
-    m.position.set((x1 + x2) / 2, (y1 + y2) / 2, z);
-    m.rotation.z = Math.atan2(y2 - y1, x2 - x1);
+  const zA = zSt + a, zB = zSt - a; // proti sprednjemu robu, proti objektu
+  const yA = strehaPri(zA), yB = strehaPri(zB);
+  const okvir = 0.08;
+  const krak = (z1: number, y1: number, z2: number, y2: number, d = okvir) => {
+    const dol = Math.hypot(z2 - z1, y2 - y1);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(d, dol, d), M.kovina);
+    m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2);
+    m.rotation.x = Math.atan2(z2 - z1, y2 - y1);
     m.castShadow = true;
     m.receiveShadow = true;
     g.add(m);
   };
-  krak(x, vrh, x - a, yNosilca);
-  krak(x, vrh, x + a, yNosilca);
-  krak(x - a, yNosilca - 0.03, x + a, yNosilca - 0.03, 0.06);
-  // lesene letvice: pokončne, med krakoma (presek 5 × 2,2 cm, širina vzdolž nosilca)
+  krak(zSt, vrh, zA, yA);
+  krak(zSt, vrh, zB, yB);
+  krak(zB, yB - 0.035, zA, yA - 0.035, 0.07);
+  // lesene letvice: pokončne, med krakoma (presek 5 × 2,2 cm, širina vzdolž globine)
   const seg: [number, number, number, number][] = [];
-  for (let xx = x - a + 0.06; xx < x + a - 0.04; xx += 0.07) {
-    const yDno = vrh + (Math.abs(xx - x) / a) * (yNosilca - vrh) + 0.04;
-    const yZg = yNosilca - 0.06;
-    if (yZg - yDno > 0.04) seg.push([xx, yDno, xx, yZg]);
+  const zs: number[] = [];
+  for (let z = zB + 0.07; z < zA - 0.05; z += 0.075) {
+    const t = Math.abs(z - zSt) / a;
+    const yDno = vrh + t * ((z > zSt ? yA : yB) - vrh) + 0.05;
+    const yZg = strehaPri(z) - 0.07;
+    if (yZg - yDno > 0.04) {
+      seg.push([0, yDno, 0, yZg]);
+      zs.push(z);
+    }
   }
   const im = instance(seg, 0.05, 0.022, M.lesObloga);
-  im.position.z = z;
+  const m4 = new THREE.Matrix4();
+  const zasuk = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+  zs.forEach((z, i) => {
+    im.getMatrixAt(i, m4);
+    const poz = new THREE.Vector3(), q = new THREE.Quaternion(), sk = new THREE.Vector3();
+    m4.decompose(poz, q, sk);
+    poz.set(x, poz.y, z);
+    m4.compose(poz, zasuk.clone().multiply(q), sk);
+    im.setMatrixAt(i, m4);
+  });
+  im.instanceMatrix.needsUpdate = true;
   g.add(im);
   return g;
 }
@@ -896,26 +918,30 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
   const nagib = Math.atan2(naklon, D);
   const strehaPri = (z: number) => yS + ((yZ - yS) * -z) / D; // spodnji rob strehe na globini z
 
-  // Ob objektu in od širine 6 m: namesto vmesnega stebra sta sprednja stebra pomaknjena navznoter, na vrhu imata
-  // trikotno konzolo (okvir iz materiala konstrukcije, notri lesene letvice), ki skrajša razpon sprednjega nosilca.
-  const konz = obObjektu && W >= 6 && n.konzole;
-  const odmik = konz ? Math.min(W * 0.17, 1.6) : 0;
-  const a = konz ? Math.min(1.1, W * 0.1) : 0; // polovica širine konzole ob nosilcu
-  const hK = a * 1.3; // višina konzole
-  // stebri: spredaj vedno, zadaj samo pri samostojnem; od širine 6 m vmesni steber na sredini (razen s konzolami)
+  // Stranski konzoli (ob objektu, od širine 6 m, brez stranskih sten): stebra ob straneh sta pomaknjena nazaj proti
+  // objektu, na vrhu imata trikotno konzolo v ravnini stranice (okvir iz materiala konstrukcije, notri lesene letvice),
+  // ki nosi streho pred in za stebrom. Spredaj ni stebrov, vmesnega stebra ni.
+  const konz = obObjektu && W >= 6 && n.konzole && !n.stranLevo && !n.stranDesno;
+  const zK = konz ? -Math.max(1.0, Math.min(D * 0.45, D - 1.2)) : zSt; // z stebrov s konzolo
+  const a = konz ? Math.min(D * 0.32, 1.7, -zK - 0.15) : 0; // polovica dolžine konzole ob strehi
+  const hK = a * 0.85; // višina konzole
   const xs = konz
-    ? [-W / 2 + odmik, W / 2 - odmik]
+    ? [-W / 2 + prerez / 2, W / 2 - prerez / 2]
     : W >= 6 ? [-W / 2 + prerez / 2, 0, W / 2 - prerez / 2] : [-W / 2 + prerez / 2, W / 2 - prerez / 2];
   for (const x of xs) {
-    const vrh = konz ? yS - hK : H;
-    g.add(skatla(prerez, vrh, prerez, M.kovina, x, vrh / 2, zSt));
+    const vrh = konz ? strehaPri(zK) - hK : H;
+    g.add(skatla(prerez, vrh, prerez, M.kovina, x, vrh / 2, zK));
     if (!obObjektu) g.add(skatla(prerez, H + naklon, prerez, M.kovina, x, (H + naklon) / 2, zadaj + prerez / 2));
-    if (konz) g.add(konzola(x, zSt, a, vrh, yS, M));
+    if (konz) g.add(konzola(x, zK, a, vrh, strehaPri, M));
   }
 
   if (n.tip === 'box') {
     // odtok je speljan skozi sprednja vogalna stebra, spodaj iz stebra pogleda kratek izliv
-    for (const x of [xs[0], xs[xs.length - 1]]) g.add(izlivStebra(x, prerez, M));
+    for (const x of [xs[0], xs[xs.length - 1]]) {
+      const iz = izlivStebra(x, prerez, M);
+      iz.position.z = zK + prerez / 2;
+      g.add(iz);
+    }
     // ravna streha, skrita v obodnem okvirju višine 25 cm (žleb je v okvirju)
     const v = 0.25;
     g.add(skatla(W, v, 0.08, M.kovina, 0, yS + v / 2, -0.04));
@@ -926,7 +952,7 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
     // enokapnica: nosilec spredaj z vidnim žlebom in odtočno cevjo, nosilec zadaj (na steni ali stebrih)
     g.add(skatla(W + 0.1, 0.16, 0.12, M.kovina, 0, yS + 0.06, -0.06));
     g.add(skatla(W, 0.14, 0.1, M.kovina, 0, yZ + 0.05, zadaj + 0.06));
-    g.add(zlebEnokapnice(W, yS, M, xs[xs.length - 1]));
+    g.add(zlebEnokapnice(W, yS, M, zK));
   }
 
   // špirovci
