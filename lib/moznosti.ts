@@ -8,6 +8,7 @@ export const polnilaNazivi: Record<PolniloP, string> = {
   steklo: 'Steklo',
   zarki: 'Žarki',
   perforirana: 'Perforirana pločevina',
+  les: 'Lesene deske',
 };
 
 export const polnilaOpisi: Record<PolniloP, string> = {
@@ -17,6 +18,7 @@ export const polnilaOpisi: Record<PolniloP, string> = {
   steklo: 'Kaljeno varnostno steklo v kovinskem okvirju.',
   zarki: 'Palice, ki se križajo: pokončni, vodoravni, pahljača ali mreža.',
   perforirana: 'Pločevina z izrezi: izberete vzorec ali motiv po želji.',
+  les: 'Lesene deske v kovinskem okvirju, pokončne ali vodoravne.',
 };
 
 export const oblikeNazivi: Record<OblikaNadstreska, string> = {
@@ -52,7 +54,7 @@ export const deli: Record<DelId, DelOpis> = {
     opis: 'Aluminij ali barvan inox, montaža z vrha ali s strani plošče.',
     href: '/ograje',
     galerija: 'zunanje-balkonske-ograje',
-    polnila: ['vertikalne', 'palicna', 'horizontalne', 'zarki'],
+    polnila: ['vertikalne', 'palicna', 'horizontalne', 'zarki', 'perforirana', 'les'],
     konfigurator: 'izdelek=ograja&tip=balkonska',
   },
   B: {
@@ -82,7 +84,7 @@ export const deli: Record<DelId, DelOpis> = {
     opis: 'Ograja na podzidku ali temeljih, drsna, samonosna ali krilna vrata, pogon in osebni prehod.',
     href: '/ograje#dvoriscne',
     galerija: 'zunanje-dvoriscne-ograje',
-    polnila: ['horizontalne', 'vertikalne', 'perforirana', 'palicna'],
+    polnila: ['horizontalne', 'vertikalne', 'perforirana', 'palicna', 'les'],
     vrata: ['drsna', 'samonosna', 'krilna'],
     konfigurator: 'izdelek=ograja&tip=dvoriscna',
   },

@@ -7,7 +7,7 @@
 export type DelId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 export const ZUNAJ: DelId[] = ['A', 'B', 'C', 'D'];
 export const NOTRI: DelId[] = ['E', 'F'];
-export type PolniloP = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana';
+export type PolniloP = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana' | 'les';
 export type OblikaNadstreska = 'box' | 'enokapnica';
 export type VrataP = 'drsna' | 'samonosna' | 'krilna';
 
@@ -130,6 +130,11 @@ function polnilo(
       okvir = true;
       break;
     }
+    case 'les':
+      // pokončne lesene deske v okvirju
+      for (let x = xa + 0.02; x < xb - 0.02; x += 0.135) g.push(rect(x, zMin - 0.05, Math.min(x + 0.12, xb), zMax + 0.05, `fill="var(--p-les, #b48a5a)" ${ROB}`));
+      okvir = true;
+      break;
     case 'zarki': {
       const h = zMax - zMin;
       const dx = h / 1.6;

@@ -88,7 +88,29 @@ export default function Scena3D(props: Props) {
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.maxPolarAngle = Math.PI * 0.49; // ne pod tla
-    controls.enablePan = false;
+    // premikanje pogleda: desni gumb, ali levi gumb s tipko Shift/Ctrl/Cmd; na telefonu poteg z dvema prstoma
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.panSpeed = 0.9;
+    controls.keyPanSpeed = 14;
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+    // središče pogleda ne sme odplavati daleč od modela (sicer se uporabnik »izgubi«)
+    const omejiPremik = () => {
+      const o = svet.current?.okvir;
+      if (!o) return;
+      const meja = o.velikost * 1.1;
+      const d = controls.target.clone().sub(o.sredisce);
+      d.y = Math.max(-o.velikost * 0.6, Math.min(meja, d.y));
+      if (d.length() > meja) d.setLength(meja);
+      const nov = o.sredisce.clone().add(d);
+      const zamik = nov.sub(controls.target);
+      if (zamik.lengthSq() > 1e-10) {
+        controls.target.add(zamik);
+        camera.position.add(zamik);
+      }
+    };
+    controls.addEventListener('change', omejiPremik);
 
     let animacija = 0;
     let tece = false;
@@ -260,9 +282,11 @@ export default function Scena3D(props: Props) {
 
   return (
     <div className={s.scena}>
-      <div ref={gostitelj} className={s.platno} aria-label="3D model izbranega izdelka. Povlecite za vrtenje." role="img" />
+      <div ref={gostitelj} className={s.platno} aria-label="3D model izbranega izdelka. Povlecite za vrtenje, z desnim gumbom ali s tipko Shift za premik." role="img" />
       <p className={s.namig} aria-hidden>
-        <HandGrabbing size={16} weight="bold" /> Povlecite za vrtenje, povečava s kolescem ali dvema prstoma
+        <HandGrabbing size={16} weight="bold" />
+        <span className={s.namigMis}>Vrtenje: povlecite · premik: desni gumb ali Shift + povlecite · povečava: kolesce</span>
+        <span className={s.namigDotik}>Vrtenje: en prst · premik in povečava: dva prsta</span>
       </p>
       <button type="button" className={s.pogled} onClick={() => svet.current?.pogled(false)}>
         <ArrowCounterClockwise size={16} weight="bold" aria-hidden /> Pogled

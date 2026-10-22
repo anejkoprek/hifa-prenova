@@ -16,6 +16,12 @@
   transition: opacity 200ms var(--ease-out);
 }
 .platno[data-vlece] ~ .namig { opacity: 0; }
+/* namig glede na napravo: miška ali dotik */
+.namigDotik { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .namigMis { display: none; }
+  .namigDotik { display: inline; }
+}
 
 .pogled {
   position: absolute;
@@ -46,6 +52,6 @@
 }
 
 @media (max-width: 640px) {
-  .namig { display: none; }
+  .namig { right: auto; max-width: calc(100% - 7rem); font-size: 0.72rem; padding: 0.3rem 0.5rem; }
   .pogled { min-height: 34px; padding: 0.25rem 0.6rem; }
 }

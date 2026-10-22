@@ -49,9 +49,11 @@ function novaMateriala(ral: string, material: string) {
   const trava = new THREE.MeshStandardMaterial({ color: 0xb3bba9, roughness: 1 });
   const tla = new THREE.MeshStandardMaterial({ color: 0xc8cbc4, roughness: 0.9 });
   const parket = new THREE.MeshStandardMaterial({ color: 0xd8c7ad, roughness: 0.7 });
+  // svetel les (macesen) za obloge nadstreškov in konzole
+  const lesObloga = new THREE.MeshStandardMaterial({ color: 0xcfa66e, roughness: 0.72 });
   const motor = new THREE.MeshStandardMaterial({ color: 0x2a2f33, roughness: 0.55 });
   const luc = new THREE.MeshStandardMaterial({ color: 0xf0b33c, emissive: 0xf0b33c, emissiveIntensity: 0.6, roughness: 0.4 });
-  return { kovina, steklo, robStekla, beton, betonTemen, fasada, okvirOkna, oknoSteklo, les, asfalt, trava, tla, parket, motor, luc };
+  return { kovina, steklo, robStekla, beton, betonTemen, fasada, okvirOkna, oknoSteklo, les, lesObloga, asfalt, trava, tla, parket, motor, luc };
 }
 
 /* ---------------------------------------------------------------- osnovni gradniki */
@@ -183,6 +185,10 @@ export type OpcijeOgraje = {
   zarkiCelota?: number;
   /** ročaj čez vrh tudi na vodoravnem delu (nadaljevanje stopniščne ograje ob podestu ali zgornji etaži) */
   rocaj?: boolean;
+  /** lesen ročaj namesto kovinskega (notranje ograje) */
+  lesenRocaj?: boolean;
+  /** lesene deske: pokončne ali vodoravne */
+  smerLesa?: 'navpicne' | 'vodoravne';
   /** odprte palice brez stebrov: vse palice enake (kvadratna cev), vsaka sidrana posebej, brez spodnje letve */
   proste?: boolean;
   /** koliko palice segajo pod dno polja (sidranje v ploščo ali ob bok stopnic), m */
@@ -242,6 +248,22 @@ export function polje(L: number, h: number, r: number, polnilo: Polnilo, M: Mate
     // profili stojijo pokonci: dolžina po y, presek a × b
     const im = instance(seg, a, b, M.kovina);
     g.add(im);
+  } else if (polnilo === 'les') {
+    // lesene deske v kovinskem okvirju: pokončne 12 × 2 cm ali vodoravne 9 × 2 cm (na stopnišču poševne)
+    const seg: [number, number, number, number][] = [];
+    if (op.smerLesa === 'vodoravne') {
+      for (let y = notri.y0 + 0.05; y < notri.y1 - 0.04; y += 0.09 + razmik(0.012)) seg.push([0.01, y, L - 0.01, r + y]);
+      g.add(instance(seg, 0.09, 0.02, M.lesObloga));
+    } else {
+      const korak = 0.12 + razmik(0.015);
+      const n = Math.max(1, Math.floor((L - 0.02) / korak));
+      const zamik = (L - (n - 1) * korak) / 2;
+      for (let i = 0; i < n; i++) {
+        const x = zamik + i * korak;
+        seg.push([x, spodaj(x) + notri.y0, x, spodaj(x) + notri.y1]);
+      }
+      g.add(instance(seg, 0.12, 0.02, M.lesObloga));
+    }
   } else if (polnilo === 'horizontalne') {
     // lamele 50 × 20 z režo 15 mm, vzporedne z robom (na stopnišču poševne)
     const korak = 0.05 + razmik(0.015);
@@ -321,7 +343,11 @@ function ograjaVzdolz(L: number, h: number, polnilo: Polnilo, M: Materiali, r = 
     g.add(p);
   }
   // ročaj čez vrh pri stopniščih (pri odprtih palicah ga ni)
-  if ((r !== 0 || op.rocaj) && !((polnilo === 'palicna' || polnilo === 'vertikalne') && op.odprte)) g.add(palica(-0.05, h + 0.04 - (0.05 * r) / L, L + 0.05, r + h + 0.04 + (0.05 * r) / L, 0.045, 0.06, M.kovina));
+  const odprtePalice = (polnilo === 'palicna' || polnilo === 'vertikalne') && op.odprte;
+  if (op.lesenRocaj && !odprtePalice) {
+    // lesen ročaj 7 × 4,5 cm čez vrh (tudi na vodoravnem delu ob etaži in na galeriji)
+    g.add(palica(-0.05, h + 0.045 - (0.05 * r) / L, L + 0.05, r + h + 0.045 + (0.05 * r) / L, 0.045, 0.075, M.lesObloga));
+  } else if ((r !== 0 || op.rocaj) && !odprtePalice) g.add(palica(-0.05, h + 0.04 - (0.05 * r) / L, L + 0.05, r + h + 0.04 + (0.05 * r) / L, 0.045, 0.06, M.kovina));
   return g;
 }
 
@@ -354,6 +380,8 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
   const op: OpcijeOgraje = {
     vzorec: o.vzorec,
     zarki: o.zarki,
+    smerLesa: o.smerLesa,
+    lesenRocaj: (o.tip === 'stopniscna-notranja' || o.tip === 'galerijska') && o.rocaj === 'les',
     razmik: o.razmikPolnila > 0 ? o.razmikPolnila / 100 : undefined,
     razmikStebrov: o.razmikStebrov,
     odprte,
@@ -390,7 +418,7 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
       g.add(skatla(Math.min(2.2, L * 0.45), 0.42, 0.9, M.okvirOkna, kx, 0.21, globina + 0.25));
       g.add(skatla(Math.min(2.2, L * 0.45), 0.4, 0.18, M.okvirOkna, kx, 0.62, globina - 0.12));
       const ograja = o.montaza === 'stran'
-        ? ograjaVzdolz(L, h + Math.max(0, o.podaljsek) / 100, o.polnilo, M, 0, o.brezStebrickov ? 0 : Math.max(0, 0.16 - Math.max(0, o.podaljsek) / 100), { ...op, dno: 0, brezStebrov: o.brezStebrickov, sipka: (op.sipka ?? h / 2) + Math.max(0, o.podaljsek) / 100 })
+        ? ograjaVzdolz(L, h + Math.max(0, o.podaljsek) / 100, o.polnilo, M, 0, Math.max(0, 0.16 - Math.max(0, o.podaljsek) / 100), { ...op, dno: 0, sipka: (op.sipka ?? h / 2) + Math.max(0, o.podaljsek) / 100 })
         : ograjaVzdolz(L, h, o.polnilo, M, 0, 0, op);
       ograja.position.set(0, yPlosce - (o.montaza === 'stran' ? Math.max(0, o.podaljsek) / 100 : 0), globina + (o.montaza === 'stran' ? 0.045 : -0.08));
       g.add(ograja);
@@ -413,16 +441,16 @@ export function modelOgraje(o: OgrajaStanje, M: Materiali): Model {
       // s strani: nosilna plošča v barvi ograje na čelu in bokih plošče, ograja je pritrjena nanjo.
       // Spodnji rob polja je poravnan s tlemi (0) ali sega niže čez čelo plošče (podaljšek).
       const pod = Math.max(0, o.podaljsek) / 100;
-      const opS: OpcijeOgraje = { ...op, dno: 0, brezStebrov: o.brezStebrickov, sipka: (op.sipka ?? h / 2) + pod };
+      const opS: OpcijeOgraje = { ...op, dno: 0, sipka: (op.sipka ?? h / 2) + pod };
       const visinaPolja = h + pod;
       g.add(skatla(L + 0.32, 0.2, 0.012, M.kovina, L / 2, yPlosce - 0.1, globina + 0.006));
       for (const x of [-0.156, L + 0.156]) g.add(skatla(0.012, 0.2, globina, M.kovina, x, yPlosce - 0.1, globina / 2));
-      const ograja = ograjaVzdolz(L + 0.38, visinaPolja, o.polnilo, M, 0, o.brezStebrickov ? 0 : Math.max(0, 0.16 - pod), opS);
+      const ograja = ograjaVzdolz(L + 0.38, visinaPolja, o.polnilo, M, 0, Math.max(0, 0.16 - pod), opS);
       ograja.position.set(-0.19, yPlosce - pod, globina + 0.045);
       g.add(ograja);
       // stranska dela ograje na bokih plošče
       for (const x of [-0.19, L + 0.19]) {
-        const st = ograjaVzdolz(globina, visinaPolja, o.polnilo, M, 0, o.brezStebrickov ? 0 : Math.max(0, 0.16 - pod), opS);
+        const st = ograjaVzdolz(globina, visinaPolja, o.polnilo, M, 0, Math.max(0, 0.16 - pod), opS);
         st.rotation.y = Math.PI / 2;
         st.position.set(x, yPlosce - pod, globina + 0.045);
         g.add(st);
@@ -713,7 +741,9 @@ function cev(a: THREE.Vector3, b: THREE.Vector3, r: number, m: THREE.Material) {
  * Viden žleb enokapnice: polkrožen profil z zavihanim robom, zaključni kapi, kljuke in
  * odtočna cev z »labodjim vratom« ob desnem sprednjem stebru ter izlivnim kolenom spodaj.
  */
-function zlebEnokapnice(W: number, yS: number, M: Materiali) {
+/** zStebra: z sprednjega stebra (pri previsu je steber pomaknjen nazaj, cev gre pod streho do njega) */
+function zlebEnokapnice(W: number, yS: number, M: Materiali, zStebra = -0.06) {
+  const dz = zStebra + 0.06;
   const g = new THREE.Group();
   const m = materialZleba(M);
   const R = 0.07, t = 0.005;
@@ -757,9 +787,9 @@ function zlebEnokapnice(W: number, yS: number, M: Materiali) {
   const rC = 0.04;
   const p0 = new THREE.Vector3(W / 2 - 0.02, yC - R + 0.01, zC);
   const p1 = new THREE.Vector3(W / 2 - 0.02, yC - R - 0.08, zC);
-  const p2 = new THREE.Vector3(xC, yC - R - 0.3, 0.05);
-  const p3 = new THREE.Vector3(xC, 0.24, 0.05);
-  const p4 = new THREE.Vector3(xC, 0.1, 0.17);
+  const p2 = new THREE.Vector3(xC, yC - R - 0.3, 0.05 + dz);
+  const p3 = new THREE.Vector3(xC, 0.24, 0.05 + dz);
+  const p4 = new THREE.Vector3(xC, 0.1, 0.17 + dz);
   for (const [a, b] of [[p0, p1], [p1, p2], [p2, p3], [p3, p4]] as const) g.add(cev(a, b, rC, m));
   for (const p of [p1, p2, p3]) {
     const zgib = new THREE.Mesh(new THREE.SphereGeometry(rC, 16, 12), m);
@@ -771,14 +801,66 @@ function zlebEnokapnice(W: number, yS: number, M: Materiali) {
     if (y > p2.y) continue;
     const obj = new THREE.Mesh(new THREE.TorusGeometry(rC + 0.006, 0.007, 6, 18), M.kovina);
     obj.rotation.x = Math.PI / 2;
-    obj.position.set(xC, y, 0.05);
+    obj.position.set(xC, y, 0.05 + dz);
     g.add(obj);
-    g.add(skatla(0.06, 0.02, 0.02, M.kovina, xC - 0.045, y, 0.05));
+    g.add(skatla(0.06, 0.02, 0.02, M.kovina, xC - 0.045, y, 0.05 + dz));
   }
   return g;
 }
 
 /** box: voda teče skozi steber, spodaj iz sprednje stranice pogleda kratek pravokoten izliv */
+/**
+ * Trikotna konzola na vrhu stebra (v ravnini globine): konica na stebru, zgornji rob ob strehi od zSt − a do zSt + a.
+ * Okvir iz kovine konstrukcije, notri pokončne lesene letvice.
+ */
+function konzola(x: number, zSt: number, a: number, vrh: number, strehaPri: (z: number) => number, M: Materiali) {
+  const g = new THREE.Group();
+  const zA = zSt + a, zB = zSt - a; // spredaj, zadaj
+  const yA = strehaPri(Math.min(zA, 0)), yB = strehaPri(zB);
+  const okvir = 0.07;
+  // poševna kraka in zgornji pas (palica gre od točke do točke)
+  const krak = (z1: number, y1: number, z2: number, y2: number, d = okvir) => {
+    const dol = Math.hypot(z2 - z1, y2 - y1);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(d, dol, d), M.kovina);
+    m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2);
+    m.rotation.x = Math.atan2(z2 - z1, y2 - y1);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    g.add(m);
+  };
+  krak(zSt, vrh, zA, yA);
+  krak(zSt, vrh, zB, yB);
+  krak(zB, yB, zA, yA, 0.06);
+  // lesene letvice: pokončne, med krakoma
+  const seg: [number, number, number, number][] = [];
+  const korak = 0.07;
+  for (let z = zB + 0.05; z < zA - 0.04; z += korak) {
+    const t = Math.abs(z - zSt) / a; // 0 na stebru, 1 na koncu kraka
+    const yDno = vrh + t * ((z > zSt ? yA : yB) - vrh) + 0.04;
+    const yZg = strehaPri(Math.min(z, 0)) - 0.04;
+    if (yZg - yDno > 0.04) seg.push([0, yDno, 0, yZg]);
+  }
+  const im = instance(seg, 0.05, 0.022, M.lesObloga);
+  const m4 = new THREE.Matrix4();
+  let i = 0;
+  for (let z = zB + 0.05; z < zA - 0.04; z += korak) {
+    const t = Math.abs(z - zSt) / a;
+    const yDno = vrh + t * ((z > zSt ? yA : yB) - vrh) + 0.04;
+    const yZg = strehaPri(Math.min(z, 0)) - 0.04;
+    if (yZg - yDno <= 0.04) continue;
+    im.getMatrixAt(i, m4);
+    const poz = new THREE.Vector3(), q = new THREE.Quaternion(), sk = new THREE.Vector3();
+    m4.decompose(poz, q, sk);
+    poz.set(x, poz.y, z);
+    // letvica leži v ravnini konzole (širina vzdolž globine)
+    m4.compose(poz, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).multiply(q), sk);
+    im.setMatrixAt(i++, m4);
+  }
+  im.instanceMatrix.needsUpdate = true;
+  g.add(im);
+  return g;
+}
+
 function izlivStebra(x: number, prerez: number, M: Materiali) {
   const g = new THREE.Group();
   const m = materialZleba(M);
@@ -819,19 +901,33 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
     g.add(ok);
   }
 
-  // stebri: spredaj vedno, zadaj samo pri samostojnem; od širine 6 m vmesni steber na sredini
-  const xs = W >= 6 ? [-W / 2 + prerez / 2, 0, W / 2 - prerez / 2] : [-W / 2 + prerez / 2, W / 2 - prerez / 2];
-  for (const x of xs) {
-    g.add(skatla(prerez, H, prerez, M.kovina, x, H / 2, -prerez / 2));
-    if (!obObjektu) g.add(skatla(prerez, H + naklon, prerez, M.kovina, x, (H + naklon) / 2, zadaj + prerez / 2));
-  }
-
+  // previs: sprednji stebri so pomaknjeni nazaj, streha jih presega za P
+  const P = Math.min(Math.max(n.previs ?? 0, 0), Math.max(0, D - 1));
+  const zSt = -P - prerez / 2; // z sprednjih stebrov
   const yS = H, yZ = H + naklon; // višina strehe spredaj in zadaj
   const nagib = Math.atan2(naklon, D);
+  const strehaPri = (z: number) => yS + ((yZ - yS) * -z) / D; // spodnji rob strehe na globini z
+
+  // stebri: spredaj vedno, zadaj samo pri samostojnem; od širine 6 m vmesni steber na sredini
+  const xs = W >= 6 ? [-W / 2 + prerez / 2, 0, W / 2 - prerez / 2] : [-W / 2 + prerez / 2, W / 2 - prerez / 2];
+  // trikotna konzola na vrhu sprednjih stebrov (kot na izvedenih nadstreških): okvir iz istega materiala
+  // kot konstrukcija, polnilo iz pokončnih lesenih letvic; nosi previs strehe
+  const a = P > 0 ? Math.min(P + prerez / 2, 1.6) : 0; // polovica dolžine konzole ob strehi
+  const hK = a * 1.15; // višina konzole
+  for (const x of xs) {
+    const vrh = P > 0 ? strehaPri(zSt) - hK : H;
+    g.add(skatla(prerez, vrh, prerez, M.kovina, x, vrh / 2, zSt));
+    if (!obObjektu) g.add(skatla(prerez, H + naklon, prerez, M.kovina, x, (H + naklon) / 2, zadaj + prerez / 2));
+    if (P > 0) g.add(konzola(x, zSt, a, vrh, strehaPri, M));
+  }
 
   if (n.tip === 'box') {
     // odtok je speljan skozi sprednja vogalna stebra, spodaj iz stebra pogleda kratek izliv
-    for (const sx of [-1, 1]) g.add(izlivStebra(sx * (W / 2 - prerez / 2), prerez, M));
+    for (const sx of [-1, 1]) {
+      const iz = izlivStebra(sx * (W / 2 - prerez / 2), prerez, M);
+      iz.position.z = zSt + prerez / 2;
+      g.add(iz);
+    }
     // ravna streha, skrita v obodnem okvirju višine 25 cm (žleb je v okvirju)
     const v = 0.25;
     g.add(skatla(W, v, 0.08, M.kovina, 0, yS + v / 2, -0.04));
@@ -842,7 +938,7 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
     // enokapnica: nosilec spredaj z vidnim žlebom in odtočno cevjo, nosilec zadaj (na steni ali stebrih)
     g.add(skatla(W + 0.1, 0.16, 0.12, M.kovina, 0, yS + 0.06, -0.06));
     g.add(skatla(W, 0.14, 0.1, M.kovina, 0, yZ + 0.05, zadaj + 0.06));
-    g.add(zlebEnokapnice(W, yS, M));
+    g.add(zlebEnokapnice(W, yS, M, zSt));
   }
 
   // špirovci
@@ -874,12 +970,34 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
     g.add(jedro);
   }
 
-  // stranske stene: lamele (fiksne ali mehanske) v okvirju, prekati po 1,5 m
+  // lesena obloga stropa: letvice pod špirovci, vzporedne s sprednjim robom
+  if (n.lesenStrop && (n.kritina === 'trapezna' || n.kritina === 'folija')) {
+    const seg: [number, number, number, number][] = [];
+    for (let z = -0.08; z > zadaj + 0.08; z -= 0.105) seg.push([-W / 2 + 0.08, strehaPri(z) + 0.008, W / 2 - 0.08, strehaPri(z) + 0.008]);
+    const im = instance(seg, 0.09, 0.018, M.lesObloga);
+    // letvice ležijo vodoravno: presek 9 × 1,8 cm, dolžina po širini
+    const m4 = new THREE.Matrix4();
+    const ravno = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+    for (let i = 0; i < seg.length; i++) {
+      im.getMatrixAt(i, m4);
+      const poz = new THREE.Vector3(), q = new THREE.Quaternion(), sk = new THREE.Vector3();
+      m4.decompose(poz, q, sk);
+      poz.z = -0.08 - i * 0.105;
+      m4.compose(poz, q.clone().premultiply(ravno), sk);
+      im.setMatrixAt(i, m4);
+    }
+    im.instanceMatrix.needsUpdate = true;
+    g.add(im);
+  }
+
+  // stranske stene: lamele (fiksne ali mehanske) ali lesena obloga v okvirju, prekati po 1,5 m
   const meh = n.stenaTip === 'mehanske';
+  const lesStena = n.stenaTip === 'les';
+  const matStene = lesStena ? M.lesObloga : M.kovina;
   for (const [vkljuceno, x] of [[n.stranLevo, -W / 2 + 0.06], [n.stranDesno, W / 2 - 0.06]] as const) {
     if (!vkljuceno) continue;
     const st = new THREE.Group();
-    const z0 = -0.12, z1 = zadaj + (obObjektu ? 0.02 : 0.12);
+    const z0 = zSt - 0.06, z1 = zadaj + (obObjektu ? 0.02 : 0.12);
     const dol = z0 - z1;
     const yTop = (z: number) => yS + ((yZ - yS) * (z0 - z)) / dol - 0.02;
     const nP = Math.max(1, Math.ceil(dol / 1.5 - 1e-6));
@@ -891,9 +1009,9 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
     }
     const seg: [number, number, number, number][] = [];
     if (n.stenaSmer === 'horizontalne') {
-      const korak = meh ? 0.12 : 0.09;
+      const korak = meh ? 0.12 : lesStena ? 0.105 : 0.09;
       for (let y = 0.2; y < yS - 0.04; y += korak) seg.push([z1, y, z0, y]);
-      const im = instance(seg, meh ? 0.1 : 0.07, 0.02, M.kovina);
+      const im = instance(seg, meh ? 0.1 : lesStena ? 0.09 : 0.07, 0.02, matStene);
       // mehanske lamele so nagnjene (odprte)
       if (meh) im.rotation.x = 0;
       const grp = new THREE.Group();
@@ -914,10 +1032,10 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
         }
       }
     } else {
-      const korak = meh ? 0.13 : 0.1;
+      const korak = meh ? 0.13 : lesStena ? 0.105 : 0.1;
       for (let z = z0 - 0.06; z > z1 + 0.04; z -= korak) seg.push([0, 0.13, 0, yTop(z) - 0.04]);
       // pokončne lamele: vsaka na svoji globini
-      const im = instance(seg, meh ? 0.1 : 0.07, 0.02, M.kovina);
+      const im = instance(seg, meh ? 0.1 : lesStena ? 0.09 : 0.07, 0.02, matStene);
       const m4 = new THREE.Matrix4();
       let i = 0;
       for (let z = z0 - 0.06; z > z1 + 0.04; z -= korak) {

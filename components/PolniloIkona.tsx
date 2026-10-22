@@ -30,6 +30,9 @@ export default function PolniloIkona({ tip }: { tip: PolniloP }) {
         </>
       );
       break;
+    case 'les':
+      notranje = [3.5, 9, 14.5, 20].map((x) => <rect key={x} x={x} y={3} width={4.5} height={14} fill={c} opacity={0.75} />);
+      break;
     case 'perforirana':
       notranje = (
         <>

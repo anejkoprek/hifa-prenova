@@ -1,5 +1,5 @@
 // Stanje konfiguratorja, privzete vrednosti, branje iz URL-ja in povzetek za povpraševanje.
-import { naPlosci, type TipOgraje, type Polnilo, type Montaza, type Vrata } from './risbe/ograja';
+import { naPlosci, type TipOgraje, type Polnilo, type Montaza, type Vrata, type SmerLesa, type Rocaj } from './risbe/ograja';
 import type { TipNadstreska, Postavitev, Kritina } from './risbe/nadstresek';
 import { polnilaNazivi } from './moznosti';
 import { RAL } from './ral';
@@ -31,16 +31,19 @@ export type OgrajaStanje = {
   vzorec: Vzorec;
   /** žarki: izvedba */
   zarki: VzorecZarkov;
+  /** lesene deske: pokončne ali vodoravne */
+  smerLesa: SmerLesa;
+  /** notranje ograje: kovinski ali lesen ročaj */
+  rocaj: Rocaj;
   /** višina vezne palice pri izvedbi brez zgornjega ročaja, cm od tal (od polovice višine navzgor) */
   sipka: number;
   /** montaža s strani: ograja pritrjena neposredno na nosilno ploščo, brez stebričkov */
-  brezStebrickov: boolean;
   /** montaža s strani: koliko ograja sega pod nivo tal balkona, cm (0 = poravnano s tlemi) */
   podaljsek: number;
 };
 
 export type Zakljucek = 'rocaj' | 'odprto';
-export type StenaTip = 'lamele' | 'mehanske';
+export type StenaTip = 'lamele' | 'mehanske' | 'les';
 export type StenaSmer = 'vertikalne' | 'horizontalne';
 
 export type NadstresekStanje = {
@@ -56,6 +59,10 @@ export type NadstresekStanje = {
   stranDesno: boolean;
   stenaTip: StenaTip;
   stenaSmer: StenaSmer;
+  /** previs strehe pred sprednjimi stebri (m); nosilci dobijo trikotno konzolo z leseno oblogo */
+  previs: number;
+  /** lesena obloga stropa pod kritino */
+  lesenStrop: boolean;
 };
 
 export const tipiOgraj: { id: TipOgraje; naziv: string; opis: string }[] = [
@@ -67,11 +74,11 @@ export const tipiOgraj: { id: TipOgraje; naziv: string; opis: string }[] = [
 ];
 export { naPlosci };
 
-// brez stekla; perforirana pločevina pri dvoriščnih in zunanjih stopniščnih ograjah (ne na balkonih)
+// brez stekla; perforirana pločevina samo zunaj: ograje okoli hiše in zunanji balkoni (v hiši je ne dajemo)
 export const polnilaZaTip: Record<TipOgraje, Polnilo[]> = {
-  balkonska: ['vertikalne', 'palicna', 'horizontalne', 'zarki'],
-  dvoriscna: ['horizontalne', 'vertikalne', 'palicna', 'perforirana', 'zarki'],
-  'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki', 'perforirana'],
+  balkonska: ['vertikalne', 'palicna', 'horizontalne', 'zarki', 'perforirana', 'les'],
+  dvoriscna: ['horizontalne', 'vertikalne', 'palicna', 'perforirana', 'zarki', 'les'],
+  'stopniscna-zunanja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
   'stopniscna-notranja': ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
   galerijska: ['palicna', 'vertikalne', 'horizontalne', 'zarki'],
 };
@@ -91,6 +98,7 @@ export const razmikPolnilaZaPolnilo: Partial<Record<Polnilo, { min: number; max:
   palicna: { min: 4, max: 20, privzeto: 9, korak: 0.5, oznaka: 'Razmik med palicami' },
   horizontalne: { min: 0.5, max: 15, privzeto: 1.5, korak: 0.5, oznaka: 'Razmik med lamelami' },
   zarki: { min: 5, max: 30, privzeto: 9, korak: 1, oznaka: 'Razmik med žarki' },
+  les: { min: 0.5, max: 5, privzeto: 1.5, korak: 0.5, oznaka: 'Razmik med deskami' },
 };
 
 export const zakljucki: { id: Zakljucek; naziv: string; opis: string }[] = [
@@ -103,6 +111,16 @@ export { vzorci, vzorciZarkov };
 /** šipka pri odprtih palicah: od polovice višine navzgor do tik pod vrhom letev (ne nižje od polovice) */
 export const sipkaRazpon = (visina: number) => ({ min: Math.ceil(visina / 2), max: Math.max(Math.ceil(visina / 2), visina - 8) });
 export const sipkaPrivzeto = (visina: number) => visina - 12;
+export const smeriLesa: { id: SmerLesa; naziv: string; opis: string }[] = [
+  { id: 'navpicne', naziv: 'Pokončne deske', opis: 'Širina 12 cm, kot pri dvoriščnih ograjah' },
+  { id: 'vodoravne', naziv: 'Vodoravne deske', opis: 'Višina 9 cm, kot pri balkonih' },
+];
+export const rocaji: { id: Rocaj; naziv: string; opis: string }[] = [
+  { id: 'kovina', naziv: 'Kovinski ročaj', opis: 'V barvi ograje' },
+  { id: 'les', naziv: 'Lesen ročaj', opis: 'Masiven les čez vrh ograje' },
+];
+/** lesen ročaj samo pri notranjih ograjah */
+export const imaLesenRocaj = (t: TipOgraje) => t === 'stopniscna-notranja' || t === 'galerijska';
 export const podaljsekRazpon = { min: 0, max: 40, privzeto: 0 };
 
 export const visinaZaTip: Record<TipOgraje, { min: number; max: number; privzeto: number }> = {
@@ -189,7 +207,12 @@ export const kritineZaTip: Record<TipNadstreska, Kritina[]> = {
 export const steneTipi: { id: StenaTip; naziv: string; opis: string }[] = [
   { id: 'lamele', naziv: 'Lamele', opis: 'Fiksne aluminijaste lamele' },
   { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon lamel' },
+  { id: 'les', naziv: 'Lesena obloga', opis: 'Lesene letvice v kovinskem okvirju' },
 ];
+/** previs spredaj: od 0 (stebri na robu) do 1,5 m */
+export const previsRazpon = { min: 0, max: 1.5, privzeto: 0 };
+/** lesen strop samo pod neprosojno kritino */
+export const imaLesenStrop = (k: Kritina) => k === 'trapezna' || k === 'folija';
 export const steneSmeri: { id: StenaSmer; naziv: string }[] = [
   { id: 'vertikalne', naziv: 'Vertikalne' },
   { id: 'horizontalne', naziv: 'Horizontalne' },
@@ -215,8 +238,9 @@ export const privzetaOgraja: OgrajaStanje = {
   zakljucek: 'rocaj',
   vzorec: 'kvadrati',
   zarki: 'pokoncni',
+  smerLesa: 'navpicne',
+  rocaj: 'kovina',
   sipka: 98,
-  brezStebrickov: false,
   podaljsek: 0,
 };
 
@@ -233,6 +257,8 @@ export const privzetNadstresek: NadstresekStanje = {
   stranDesno: false,
   stenaTip: 'lamele',
   stenaSmer: 'vertikalne',
+  previs: 0,
+  lesenStrop: false,
 };
 
 const omeji = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -276,8 +302,9 @@ function dodatkiIzUrl(q: URLSearchParams, tip: TipOgraje) {
     zakljucek: izbira(q.get('zakljucek'), ['rocaj', 'odprto'] as const, 'rocaj'),
     vzorec: izbira(q.get('vzorec'), vzorci.map((v) => v.id), 'kvadrati'),
     zarki: izbira(q.get('zarki'), vzorciZarkov.map((v) => v.id), 'pokoncni'),
+    smerLesa: izbira(q.get('deske'), ['navpicne', 'vodoravne'] as const, 'navpicne'),
+    rocaj: izbira(q.get('rocaj'), ['kovina', 'les'] as const, 'kovina'),
     sipka: omeji(stevilo(q, 'sipka', sipkaPrivzeto(visina)), sr.min, sr.max),
-    brezStebrickov: q.get('brezStebrickov') === '1',
     podaljsek: omeji(stevilo(q, 'podaljsek', 0), podaljsekRazpon.min, podaljsekRazpon.max),
   };
 }
@@ -294,8 +321,10 @@ export function nadstresekIzUrl(q: URLSearchParams): NadstresekStanje {
     ral: ralKoda(q.get('ral'), '7016'),
     stranLevo: q.get('levo') === '1',
     stranDesno: q.get('desno') === '1',
-    stenaTip: izbira(q.get('stena'), ['lamele', 'mehanske'] as const, 'lamele'),
+    stenaTip: izbira(q.get('stena'), ['lamele', 'mehanske', 'les'] as const, 'lamele'),
     stenaSmer: izbira(q.get('smer'), ['vertikalne', 'horizontalne'] as const, 'vertikalne'),
+    previs: omeji(stevilo(q, 'previs', 0), previsRazpon.min, previsRazpon.max),
+    lesenStrop: q.get('strop') === 'les',
   };
 }
 
@@ -319,8 +348,9 @@ export function ograjaVUrl(o: OgrajaStanje): string {
   }
   if (o.polnilo === 'perforirana') q.set('vzorec', o.vzorec);
   if (o.polnilo === 'zarki') q.set('zarki', o.zarki);
+  if (o.polnilo === 'les') q.set('deske', o.smerLesa);
+  if (imaLesenRocaj(o.tip) && o.rocaj === 'les') q.set('rocaj', 'les');
   if (naPlosci(o.tip) && o.montaza === 'stran') {
-    if (o.brezStebrickov) q.set('brezStebrickov', '1');
     if (o.podaljsek) q.set('podaljsek', String(o.podaljsek));
   }
   if (o.tip === 'dvoriscna') {
@@ -352,6 +382,8 @@ export function nadstresekVUrl(n: NadstresekStanje): string {
     q.set('stena', n.stenaTip);
     q.set('smer', n.stenaSmer);
   }
+  if (n.previs > 0) q.set('previs', String(n.previs));
+  if (n.lesenStrop && imaLesenStrop(n.kritina)) q.set('strop', 'les');
   return q.toString();
 }
 
@@ -379,12 +411,14 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
     vrstice.push(o.zakljucek === 'rocaj' ? 'Z zgornjim ročajem' : `Brez zgornjega ročaja, vezna palica na višini ${o.sipka} cm`);
   }
   if (o.polnilo === 'zarki') vrstice.push(`Žarki: ${naziv(vzorciZarkov, o.zarki).toLowerCase()}`);
+  if (o.polnilo === 'les') vrstice.push(naziv(smeriLesa, o.smerLesa));
+  if (imaLesenRocaj(o.tip) && o.rocaj === 'les' && !(imaZakljucek(o.polnilo) && o.zakljucek === 'odprto')) vrstice.push('Lesen ročaj');
   if (o.polnilo === 'perforirana') {
     vrstice.push(o.vzorec === 'po-meri' ? 'Vzorec izreza: po meri (priložena skica)' : `Vzorec izreza: ${naziv(vzorci, o.vzorec).toLowerCase()}`);
   }
   if (montazeZaTip[o.tip].length) vrstice.push(`Montaža: ${naziv(montazeZaTip[o.tip], o.montaza).toLowerCase()}`);
   if (naPlosci(o.tip) && o.montaza === 'stran') {
-    vrstice.push(o.brezStebrickov ? 'Montaža brez stebričkov na nosilni profil' : 'Montaža s stebrički na nosilni profil');
+    vrstice.push('Montaža s stebrički na nosilni profil');
     vrstice.push(o.podaljsek ? `Podaljšek pod nivo tal: ${o.podaljsek} cm` : o.tip === 'galerijska' ? 'Spodnji rob v ravnini tal galerije' : 'Spodnji rob v ravnini tal balkona');
   }
   if (o.tip === 'dvoriscna') {
@@ -406,6 +440,10 @@ export function povzetekNadstreska(n: NadstresekStanje): string[] {
     ...(stene
       ? [`Stranska stena ${stene}: ${naziv(steneTipi, n.stenaTip).toLowerCase()}, ${naziv(steneSmeri, n.stenaSmer).toLowerCase()}, prekati po ${m(PREKAT)}`]
       : []),
+    ...(n.previs > 0
+      ? [`Previs spredaj ${m(n.previs)}, stebri s trikotno konzolo (okvir iz konstrukcije, lesena obloga)`]
+      : []),
+    ...(n.lesenStrop && imaLesenStrop(n.kritina) ? ['Lesena obloga stropa'] : []),
     ...(n.sirina >= 6 ? ['Vmesni steber na sredini razpona'] : []),
   ];
 }

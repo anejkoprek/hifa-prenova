@@ -43,6 +43,11 @@ import {
   steneTipi,
   steneSmeri,
   PREKAT,
+  smeriLesa,
+  rocaji,
+  imaLesenRocaj,
+  previsRazpon,
+  imaLesenStrop,
   naPlosci,
   type NadstresekStanje,
   type OgrajaStanje,
@@ -343,6 +348,8 @@ export default function Konfigurator() {
         // zunanje ograje so brez jekla
         if (!materialiZaTip(t).some((m) => m.id === n.material)) n.material = 'aluminij';
       }
+      // lesene deske: na balkonu običajno vodoravne, pri dvoriščnih ograjah pokončne
+      if (k === 'polnilo' && v === 'les' && o.polnilo !== 'les') n.smerLesa = n.tip === 'balkonska' ? 'vodoravne' : 'navpicne';
       // vsako polnilo ima svoj tipičen razmik letvic
       if ((k === 'tip' || k === 'polnilo') && n.polnilo !== o.polnilo) n.razmikPolnila = razmikPolnilaZaPolnilo[n.polnilo]?.privzeto ?? 0;
       // šipka ostane med četrtino in polovico višine
@@ -386,8 +393,9 @@ export default function Konfigurator() {
         zakljucek: imaZakljucek(og.polnilo) ? og.zakljucek : 'rocaj',
         vzorec: og.vzorec,
         zarki: og.zarki,
+        smerLesa: og.smerLesa,
+        rocaj: imaLesenRocaj(og.tip) ? og.rocaj : 'kovina',
         sipka: Math.min(Math.max(og.sipka, sipkaRazpon(og.visina).min), sipkaRazpon(og.visina).max),
-        brezStebrickov: naPlosci(og.tip) && og.montaza === 'stran' && og.brezStebrickov,
         podaljsek: naPlosci(og.tip) && og.montaza === 'stran' ? og.podaljsek : 0,
         id: 'konf-og',
         h: og.tip === 'dvoriscna' ? 400 : naPlosci(og.tip) ? 430 : 560,
@@ -405,6 +413,8 @@ export default function Konfigurator() {
       stranDesno: ns.stranDesno,
       stenaTip: ns.stenaTip,
       stenaSmer: ns.stenaSmer,
+      previs: ns.previs,
+      lesenStrop: ns.lesenStrop && imaLesenStrop(ns.kritina),
       id: 'konf-ns',
     });
   }, [izdelek, og, ns]);
@@ -431,6 +441,8 @@ export default function Konfigurator() {
           ['Kritina', naziv(kritine, ns.kritina)],
           ['Material', naziv(materiali, ns.material)],
           ['Stene', [ns.stranLevo && 'levo', ns.stranDesno && 'desno'].filter(Boolean).join(' in ') || 'brez'],
+          ...(ns.previs > 0 ? [['Previs spredaj', `${m(ns.previs)} m, konzola z leseno oblogo`] as [string, string]] : []),
+          ...(ns.lesenStrop && imaLesenStrop(ns.kritina) ? [['Strop', 'lesena obloga'] as [string, string]] : []),
         ];
   const povzetekTekst = povzetek.join('; ');
 
@@ -548,6 +560,19 @@ export default function Konfigurator() {
                     </span>
                   )}
                 />
+                {og.polnilo === 'les' ? (
+                  <>
+                    <p className={s.podnaslov}>Smer desk</p>
+                    <Kartice ime="deske" moznosti={smeriLesa} vrednost={og.smerLesa} nastavi={(v) => posodobiOg('smerLesa', v)} />
+                    <p className={`small muted ${s.opomba}`}>Deske so v kovinskem okvirju v barvi ograje. Druge barve lesa dodamo kmalu.</p>
+                  </>
+                ) : null}
+                {imaLesenRocaj(og.tip) && !(imaZakljucek(og.polnilo) && og.zakljucek === 'odprto') ? (
+                  <>
+                    <p className={s.podnaslov}>Ročaj</p>
+                    <Kartice ime="rocaj" moznosti={rocaji} vrednost={og.rocaj} nastavi={(v) => posodobiOg('rocaj', v)} />
+                  </>
+                ) : null}
                 {og.polnilo === 'zarki' ? (
                   <>
                     <p className={s.podnaslov}>Izvedba žarkov</p>
@@ -699,12 +724,6 @@ export default function Konfigurator() {
                       <p className={`small muted ${s.opomba}`}>
                         Na čelo balkonske plošče namestimo nosilni profil v barvi ograje, nanj pa montiramo ograjo.
                       </p>
-                      <div className={s.stikala}>
-                        <label className="potrditev">
-                          <input type="checkbox" checked={og.brezStebrickov} onChange={(e) => posodobiOg('brezStebrickov', e.target.checked)} />
-                          <span><strong>Montaža brez stebričkov</strong>: polja so pritrjena neposredno na nosilni profil</span>
-                        </label>
-                      </div>
                       <Mera
                         oznaka="Podaljšek pod nivo tal"
                         vrednost={og.podaljsek}
@@ -740,11 +759,34 @@ export default function Konfigurator() {
                 <Mera oznaka="Širina" vrednost={ns.sirina} nastavi={(v) => posodobiNs('sirina', v)} min={2} max={12} korak={0.1} enota="m" />
                 <Mera oznaka="Globina" vrednost={ns.globina} nastavi={(v) => posodobiNs('globina', v)} min={1.5} max={8} korak={0.1} enota="m" />
                 <Mera oznaka="Svetla višina" vrednost={ns.visina} nastavi={(v) => posodobiNs('visina', v)} min={2.1} max={3.2} korak={0.05} enota="m" />
+                <Mera
+                  oznaka="Previs strehe spredaj"
+                  vrednost={ns.previs}
+                  nastavi={(v) => posodobiNs('previs', v)}
+                  min={previsRazpon.min}
+                  max={Math.min(previsRazpon.max, Math.max(0, ns.globina - 1))}
+                  korak={0.05}
+                  gumb={0.1}
+                  enota="m"
+                />
+                <p className={`small muted ${s.opomba}`}>
+                  {ns.previs > 0
+                    ? `Sprednji stebri so pomaknjeni ${m(ns.previs)} m nazaj. Streho nad previsom nosi trikotna konzola na vsakem stebru: okvir iz ${ns.material === 'aluminij' ? 'aluminija' : ns.material === 'inox' ? 'inoxa' : 'jekla'} v barvi konstrukcije, notri lesena obloga.`
+                    : 'Pri 0 m stojijo sprednji stebri na robu strehe. S previsom jih pomaknemo nazaj, da je spredaj več prostora (npr. za odpiranje vrat avtomobila).'}
+                </p>
               </Korak>
               <Korak st={++st} naslov="Kritina">
                 <Kartice ime="ns-kritina" moznosti={kritine.filter((k) => kritineZaTip[ns.tip].includes(k.id))} vrednost={ns.kritina} nastavi={(v) => posodobiNs('kritina', v)} stolpci={3} />
+                {imaLesenStrop(ns.kritina) ? (
+                  <div className={s.stikala}>
+                    <label className="potrditev">
+                      <input type="checkbox" checked={ns.lesenStrop} onChange={(e) => posodobiNs('lesenStrop', e.target.checked)} />
+                      <span><strong>Lesena obloga stropa</strong>: lesene letvice pod kritino</span>
+                    </label>
+                  </div>
+                ) : null}
               </Korak>
-              <Korak st={++st} naslov="Stranske stene" namig={`Lamele v aluminijastem okvirju, razdeljene na prekate po ${String(PREKAT).replace('.', ',')} m.`}>
+              <Korak st={++st} naslov="Stranske stene" namig={`Lamele ali lesena obloga v kovinskem okvirju, razdeljeni na prekate po ${String(PREKAT).replace('.', ',')} m. Z obema stenama in leseno oblogo stropa je nadstrešek zaprt.`}>
                 <div className={s.stikala}>
                   <label className="potrditev">
                     <input type="checkbox" checked={ns.stranLevo} onChange={(e) => posodobiNs('stranLevo', e.target.checked)} />
@@ -757,7 +799,7 @@ export default function Konfigurator() {
                 </div>
                 {ns.stranLevo || ns.stranDesno ? (
                   <>
-                    <Kartice ime="ns-stena" moznosti={steneTipi} vrednost={ns.stenaTip} nastavi={(v) => posodobiNs('stenaTip', v)} />
+                    <Kartice ime="ns-stena" moznosti={steneTipi} vrednost={ns.stenaTip} nastavi={(v) => posodobiNs('stenaTip', v)} stolpci={3} />
                     <Kartice ime="ns-smer" moznosti={steneSmeri} vrednost={ns.stenaSmer} nastavi={(v) => posodobiNs('stenaSmer', v)} />
                   </>
                 ) : null}

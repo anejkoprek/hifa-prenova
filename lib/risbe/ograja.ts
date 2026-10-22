@@ -7,7 +7,9 @@ import { zarkiPolja, type VzorecZarkov } from '../zarki';
 export type TipOgraje = 'balkonska' | 'galerijska' | 'dvoriscna' | 'stopniscna-zunanja' | 'stopniscna-notranja';
 /** ograja na robu plošče: zunanji balkon ali notranja galerija (ista montaža z vrha ali s strani) */
 export const naPlosci = (t: TipOgraje) => t === 'balkonska' || t === 'galerijska';
-export type Polnilo = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana';
+export type Polnilo = 'palicna' | 'vertikalne' | 'horizontalne' | 'zarki' | 'steklo' | 'perforirana' | 'les';
+export type SmerLesa = 'navpicne' | 'vodoravne';
+export type Rocaj = 'kovina' | 'les';
 export type Montaza = 'vrh' | 'stran' | 'podzidek' | 'temelj';
 export type Vrata = 'brez' | 'krilna' | 'drsna' | 'samonosna';
 
@@ -30,6 +32,10 @@ export interface OgrajaOpts {
   razmikPolnila?: number;
   /** palice: ročaj zgoraj ali odprte palice z vodoravno šipko */
   zakljucek?: 'rocaj' | 'odprto';
+  /** lesene deske: pokončne ali vodoravne */
+  smerLesa?: SmerLesa;
+  /** notranje ograje: lesen ročaj čez vrh */
+  rocaj?: Rocaj;
   /** višina vodoravne šipke od tal, cm */
   sipka?: number;
   /** perforirana pločevina: vzorec izreza */
@@ -37,7 +43,6 @@ export interface OgrajaOpts {
   /** žarki: izvedba */
   zarki?: VzorecZarkov;
   /** montaža s strani: polja na nosilni plošči brez stebričkov */
-  brezStebrickov?: boolean;
   /** montaža s strani: ograja sega pod nivo tal, cm */
   podaljsek?: number;
   w?: number;
@@ -66,7 +71,7 @@ export function risiOgrajo(o: OgrajaOpts): string {
   const odprte = (o.polnilo === 'palicna' || o.polnilo === 'vertikalne') && o.zakljucek === 'odprto';
   // na stopnicah so odprte palice pritrjene ob bok in segajo ~20 cm pod rob stopnic
   const clearance = stran ? -podaljsek : odprte ? (stopnice ? -0.2 : 0) : dvorisce ? 0.05 : 0.06;
-  const brezStebrov = stran && !!o.brezStebrickov;
+  const brezStebrov = false; // montaža brez stebričkov ni mogoča
   const razmik = (privzeto: number) => (o.razmikPolnila && o.razmikPolnila > 0 ? o.razmikPolnila / 100 : privzeto);
   const hm = visina - clearance;
   const vrata = dvorisce ? o.vrata ?? 'brez' : 'brez';
@@ -168,6 +173,22 @@ export function risiOgrajo(o: OgrajaOpts): string {
         if (!odprte) okvir = true; // odprte letvice: brez okvirja zgoraj
         break;
       }
+      case 'les': {
+        // lesene deske v kovinskem okvirju: pokončne (12 cm) ali vodoravne (9 cm)
+        const les = 'var(--draw-wood)';
+        if (o.smerLesa === 'vodoravne') {
+          const dh = 0.09;
+          for (let d = 0.02; d < hm + 0.1; d += dh + razmik(0.012)) {
+            const y1 = bottomFn(xa) - d * s, y2 = y1 + slope * (xb - xa);
+            g.push(`<polygon points="${poly([[X(xa) - 2, y1], [X(xb) + 2, y2], [X(xb) + 2, y2 - dh * s], [X(xa) - 2, y1 - dh * s]])}" fill="${les}" stroke="${edge}" stroke-width="0.6"/>`);
+          }
+        } else {
+          const bw = 0.12;
+          for (let x = xa + 0.01; x < xb - 0.02; x += bw + razmik(0.015)) g.push(`<rect x="${n(X(x))}" y="${n(minY - 2)}" width="${n(Math.min(bw, xb - x) * s)}" height="${n(maxY - minY + 4)}" fill="${les}" stroke="${edge}" stroke-width="0.6"/>`);
+        }
+        okvir = true;
+        break;
+      }
       case 'horizontalne': {
         const sw = Math.max(2, 0.05 * s);
         for (let d = 0.035; d < hm + 0.1; d += 0.05 + razmik(0.015)) {
@@ -260,6 +281,13 @@ export function risiOgrajo(o: OgrajaOpts): string {
     // odprte palice: brez ročaja, palice povezuje vodoravna šipka
     const hs = Math.min(Math.max((o.sipka ?? visina * 100 - 12) / 100, visina / 2), visina - 0.06);
     rail((x) => Fy - (stopOff + Math.min(x, Ls) * r + hs) * s - 0.006 * s, 0.012);
+  } else if (o.rocaj === 'les') {
+    // lesen ročaj čez vrh (notranje ograje)
+    const ry = (x: number) => Yt(x) - 0.03 * s;
+    const odseki: [number, number][] = P > 0.05 ? [[0, Ls], [Ls, Ls + P]] : [[0, Ls]];
+    for (const [x1, x2] of odseki) {
+      parts.push(`<polygon points="${poly([[X(x1) - 0.03 * s, ry(x1)], [X(x2) + 0.03 * s, ry(x2)], [X(x2) + 0.03 * s, ry(x2) + 0.05 * s], [X(x1) - 0.03 * s, ry(x1) + 0.05 * s]])}" fill="var(--draw-wood)" stroke="${edge}" stroke-width="0.8"/>`);
+    }
   } else if (balkonSlog) {
     // ročaj nekoliko nad polnilom
     rail((x) => Yt(x) - 0.012 * s, 0.05);
