@@ -57,9 +57,11 @@ export type NadstresekStanje = {
   ral: string;
   stranLevo: boolean;
   stranDesno: boolean;
+  /** zadnja stena (samo samostojen nadstrešek; ob objektu je zadaj objekt) */
+  stranZadaj: boolean;
   stenaTip: StenaTip;
   stenaSmer: StenaSmer;
-  /** ob objektu, od širine 6 m, brez stranskih sten: stebra ob straneh pomaknjena nazaj proti objektu, s trikotno konzolo */
+  /** samo box ob objektu, brez stranskih sten: stebra ob straneh pomaknjena nazaj proti objektu, s trikotno konzolo */
   konzole: boolean;
   /** lesena obloga stropa pod kritino */
   lesenStrop: boolean;
@@ -209,8 +211,8 @@ export const steneTipi: { id: StenaTip; naziv: string; opis: string }[] = [
   { id: 'mehanske', naziv: 'Mehanske lamele', opis: 'Nastavljiv naklon lamel' },
   { id: 'les', naziv: 'Lesena obloga', opis: 'Lesene letvice v kovinskem okvirju' },
 ];
-/** stranski konzoli: samo ob objektu, od širine 6 m in brez stranskih sten */
-export const imaKonzole = (n: { postavitev: Postavitev; sirina: number }) => n.postavitev === 'ob-objektu' && n.sirina >= 6;
+/** stranski konzoli: samo box ob objektu (in brez stranskih sten) */
+export const imaKonzole = (n: { postavitev: Postavitev; tip: TipNadstreska }) => n.postavitev === 'ob-objektu' && n.tip === 'box';
 export const konzoleVklopljene = (n: NadstresekStanje) => n.konzole && imaKonzole(n) && !n.stranLevo && !n.stranDesno;
 /** lesen strop samo pod neprosojno kritino */
 export const imaLesenStrop = (k: Kritina) => k === 'trapezna' || k === 'folija';
@@ -256,6 +258,7 @@ export const privzetNadstresek: NadstresekStanje = {
   ral: '7016',
   stranLevo: false,
   stranDesno: false,
+  stranZadaj: false,
   stenaTip: 'lamele',
   stenaSmer: 'vertikalne',
   konzole: false,
@@ -322,6 +325,7 @@ export function nadstresekIzUrl(q: URLSearchParams): NadstresekStanje {
     ral: ralKoda(q.get('ral'), '7016'),
     stranLevo: q.get('levo') === '1',
     stranDesno: q.get('desno') === '1',
+    stranZadaj: q.get('zadaj') === '1',
     stenaTip: izbira(q.get('stena'), ['lamele', 'mehanske', 'les'] as const, 'lamele'),
     stenaSmer: izbira(q.get('smer'), ['vertikalne', 'horizontalne'] as const, 'vertikalne'),
     konzole: q.get('konzole') === '1',
@@ -379,7 +383,9 @@ export function nadstresekVUrl(n: NadstresekStanje): string {
   });
   if (n.stranLevo) q.set('levo', '1');
   if (n.stranDesno) q.set('desno', '1');
-  if (n.stranLevo || n.stranDesno) {
+  const zadaj = n.stranZadaj && n.postavitev === 'samostojen';
+  if (zadaj) q.set('zadaj', '1');
+  if (n.stranLevo || n.stranDesno || zadaj) {
     q.set('stena', n.stenaTip);
     q.set('smer', n.stenaSmer);
   }
@@ -431,7 +437,7 @@ export function povzetekOgraje(o: OgrajaStanje): string[] {
 }
 
 export function povzetekNadstreska(n: NadstresekStanje): string[] {
-  const stene = [n.stranLevo && 'levo', n.stranDesno && 'desno'].filter(Boolean).join(' in ');
+  const stene = [n.stranLevo && 'levo', n.stranDesno && 'desno', n.stranZadaj && n.postavitev === 'samostojen' && 'zadaj'].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' in $1');
   return [
     `Nadstrešek ${naziv(tipiNadstreskov, n.tip).toLowerCase()}, ${naziv(postavitve, n.postavitev).toLowerCase()}`,
     `${m(n.sirina)} × ${m(n.globina)}, svetla višina ${m(n.visina)}`,
@@ -439,7 +445,7 @@ export function povzetekNadstreska(n: NadstresekStanje): string[] {
     n.tip === 'enokapnica' ? 'Zunanji žleb z odtočno cevjo' : 'Odvodnjavanje skozi steber',
     `Material: ${naziv(materiali, n.material).toLowerCase()}, ${ralTekst(n.ral)}`,
     ...(stene
-      ? [`Stranska stena ${stene}: ${naziv(steneTipi, n.stenaTip).toLowerCase()}, ${naziv(steneSmeri, n.stenaSmer).toLowerCase()}, prekati po ${m(PREKAT)}`]
+      ? [`Stena ${stene}: ${naziv(steneTipi, n.stenaTip).toLowerCase()}, ${naziv(steneSmeri, n.stenaSmer).toLowerCase()}, prekati po ${m(PREKAT)}`]
       : []),
     ...(konzoleVklopljene(n)
       ? ['Stebra ob straneh pomaknjena nazaj proti objektu, s trikotnima konzolama (okvir iz konstrukcije, lesena obloga); spredaj brez stebrov']

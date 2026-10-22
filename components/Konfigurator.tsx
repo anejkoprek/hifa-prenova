@@ -308,6 +308,8 @@ function Barve({ ral, nastavi }: { ral: string; nastavi: (k: string) => void }) 
 export default function Konfigurator() {
   const [izdelek, setIzdelek] = useState<Izdelek>('ograja');
   const [og, setOg] = useState<OgrajaStanje>(privzetaOgraja);
+  // opozorilo, ko obiskovalec izbere nekaj, kar se izključuje (stranske stene in stranski konzoli)
+  const [napakaNs, setNapakaNs] = useState<'stene' | 'konzole' | null>(null);
   const [ns, setNs] = useState<NadstresekStanje>(privzetNadstresek);
   const [nalozeno, setNalozeno] = useState(false);
   const [pogled3d, setPogled3d] = useState(false);
@@ -412,6 +414,7 @@ export default function Konfigurator() {
       barva: ralHex(ns.ral),
       stranLevo: ns.stranLevo,
       stranDesno: ns.stranDesno,
+      stranZadaj: ns.stranZadaj && ns.postavitev === 'samostojen',
       stenaTip: ns.stenaTip,
       stenaSmer: ns.stenaSmer,
       konzole: konzoleVklopljene(ns),
@@ -441,7 +444,7 @@ export default function Konfigurator() {
           ['Svetla višina', `${m(ns.visina)} m`],
           ['Kritina', naziv(kritine, ns.kritina)],
           ['Material', naziv(materiali, ns.material)],
-          ['Stene', [ns.stranLevo && 'levo', ns.stranDesno && 'desno'].filter(Boolean).join(' in ') || 'brez'],
+          ['Stene', [ns.stranLevo && 'levo', ns.stranDesno && 'desno', ns.stranZadaj && ns.postavitev === 'samostojen' && 'zadaj'].filter(Boolean).join(', ') || 'brez'],
           ...(konzoleVklopljene(ns) ? [['Stebri', 'ob straneh, nazaj, s trikotnima konzolama'] as [string, string]] : []),
           ...(ns.lesenStrop && imaLesenStrop(ns.kritina) ? [['Strop', 'lesena obloga'] as [string, string]] : []),
         ];
@@ -756,27 +759,35 @@ export default function Konfigurator() {
               <Korak st={++st} naslov="Postavitev">
                 <Kartice ime="ns-postavitev" moznosti={postavitve} vrednost={ns.postavitev} nastavi={(v) => posodobiNs('postavitev', v)} />
               </Korak>
-              <Korak st={++st} naslov="Mere" namig="Za en avto zadošča približno 3 × 5,5 m, za dva 5,5 × 5,5 m. Od širine 6 m dalje dodamo vmesni steber; ob objektu lahko namesto tega stebra pomaknemo nazaj in jima dodamo stranski konzoli.">
+              <Korak st={++st} naslov="Mere" namig="Za en avto zadošča približno 3 × 5,5 m, za dva 5,5 × 5,5 m. Od širine 6 m dalje dodamo vmesni steber. Pri boxu ob objektu lahko stebra pomaknemo nazaj in jima dodamo stranski konzoli.">
                 <Mera oznaka="Širina" vrednost={ns.sirina} nastavi={(v) => posodobiNs('sirina', v)} min={2} max={12} korak={0.1} enota="m" />
                 <Mera oznaka="Globina" vrednost={ns.globina} nastavi={(v) => posodobiNs('globina', v)} min={1.5} max={8} korak={0.1} enota="m" />
                 <Mera oznaka="Svetla višina" vrednost={ns.visina} nastavi={(v) => posodobiNs('visina', v)} min={2.1} max={3.2} korak={0.05} enota="m" />
-                {ns.postavitev === 'ob-objektu' ? (
+                {imaKonzole(ns) ? (
                   <>
                     <div className={s.stikala}>
                       <label className="potrditev">
                         <input
                           type="checkbox"
                           checked={konzoleVklopljene(ns)}
-                          disabled={!imaKonzole(ns) || ns.stranLevo || ns.stranDesno}
-                          onChange={(e) => posodobiNs('konzole', e.target.checked)}
+                          aria-invalid={napakaNs === 'konzole' || undefined}
+                          onChange={(e) => {
+                            if (e.target.checked && (ns.stranLevo || ns.stranDesno)) return setNapakaNs('konzole');
+                            setNapakaNs(null);
+                            posodobiNs('konzole', e.target.checked);
+                          }}
                         />
                         <span><strong>Stranski konzoli, brez stebrov spredaj</strong></span>
                       </label>
                     </div>
                     <p className={`small muted ${s.opomba}`}>
-                      {!imaKonzole(ns) ? <><strong>Na voljo od širine 6 m.</strong> </> : ns.stranLevo || ns.stranDesno ? <><strong>Ni mogoče s stranskimi stenami.</strong> </> : null}
                       Stebra ob straneh pomaknemo nazaj proti objektu, spredaj je prehod popolnoma prost. Na vrhu vsakega stebra je trikotna konzola vzdolž stranice, ki nosi streho pred in za stebrom: okvir iz {ns.material === 'aluminij' ? 'aluminija' : ns.material === 'inox' ? 'inoxa' : 'jekla'} v barvi konstrukcije, notri lesena obloga.
                     </p>
+                    {napakaNs === 'konzole' ? (
+                      <p className={s.napakaIzbire} role="alert">
+                        Stranskih konzol ni mogoče dodati, ker so izbrane stranske stene. Najprej v koraku Stranske stene odstranite stene.
+                      </p>
+                    ) : null}
                   </>
                 ) : null}
               </Korak>
@@ -791,21 +802,37 @@ export default function Konfigurator() {
                   </div>
                 ) : null}
               </Korak>
-              <Korak st={++st} naslov="Stranske stene" namig={`Lamele ali lesena obloga v kovinskem okvirju, razdeljeni na prekate po ${String(PREKAT).replace('.', ',')} m. Z obema stenama in leseno oblogo stropa je nadstrešek zaprt.`}>
+              <Korak st={++st} naslov="Stene" namig={`Lamele ali lesena obloga v kovinskem okvirju, razdeljeni na prekate po ${String(PREKAT).replace('.', ',')} m. Samostojen nadstrešek lahko zaprete tudi zadaj.`}>
                 <div className={s.stikala}>
                   <label className="potrditev">
-                    <input type="checkbox" checked={ns.stranLevo} disabled={konzoleVklopljene(ns)} onChange={(e) => posodobiNs('stranLevo', e.target.checked)} />
+                    <input type="checkbox" checked={ns.stranLevo} aria-invalid={napakaNs === 'stene' || undefined} onChange={(e) => {
+                      if (e.target.checked && konzoleVklopljene(ns)) return setNapakaNs('stene');
+                      setNapakaNs(null);
+                      posodobiNs('stranLevo', e.target.checked);
+                    }} />
                     <span><strong>Levo</strong></span>
                   </label>
                   <label className="potrditev">
-                    <input type="checkbox" checked={ns.stranDesno} disabled={konzoleVklopljene(ns)} onChange={(e) => posodobiNs('stranDesno', e.target.checked)} />
+                    <input type="checkbox" checked={ns.stranDesno} aria-invalid={napakaNs === 'stene' || undefined} onChange={(e) => {
+                      if (e.target.checked && konzoleVklopljene(ns)) return setNapakaNs('stene');
+                      setNapakaNs(null);
+                      posodobiNs('stranDesno', e.target.checked);
+                    }} />
                     <span><strong>Desno</strong></span>
                   </label>
+                  {ns.postavitev === 'samostojen' ? (
+                    <label className="potrditev">
+                      <input type="checkbox" checked={ns.stranZadaj} onChange={(e) => posodobiNs('stranZadaj', e.target.checked)} />
+                      <span><strong>Zadaj</strong></span>
+                    </label>
+                  ) : null}
                 </div>
-                {konzoleVklopljene(ns) ? (
-                  <p className={`small muted ${s.opomba}`}>Stranske stene niso mogoče, ker sta ob straneh konzoli. Če želite stene, v koraku Mere izklopite stranski konzoli.</p>
+                {napakaNs === 'stene' ? (
+                  <p className={s.napakaIzbire} role="alert">
+                    Stranskih sten ni mogoče dodati, ker so izbrane stranske konzole: stojijo ravno tam, kjer bi bila stena. Če želite stene, najprej v koraku Mere izklopite stranske konzole.
+                  </p>
                 ) : null}
-                {ns.stranLevo || ns.stranDesno ? (
+                {ns.stranLevo || ns.stranDesno || (ns.stranZadaj && ns.postavitev === 'samostojen') ? (
                   <>
                     <Kartice ime="ns-stena" moznosti={steneTipi} vrednost={ns.stenaTip} nastavi={(v) => posodobiNs('stenaTip', v)} stolpci={3} />
                     <Kartice ime="ns-smer" moznosti={steneSmeri} vrednost={ns.stenaSmer} nastavi={(v) => posodobiNs('stenaSmer', v)} />

@@ -277,3 +277,16 @@
 .opozorilo { margin-top: -0.3rem; padding: 0.55rem 0.75rem; border-left: 3px solid #d08a12; background: rgb(240 179 60 / 0.12); color: var(--crnilo-2); }
 .poMeriPovezava { display: inline-block; margin-top: 0.7rem; padding-block: 0.4rem; font-size: var(--step--1); color: var(--jeklo); text-decoration: none; }
 .poMeriPovezava strong { color: var(--crnilo); font-weight: 650; border-bottom: 1.5px solid var(--zelena); }
+
+/* opozorilo pri izbiri, ki se izključuje z drugo */
+.napakaIzbire {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--napaka);
+  border-radius: 4px;
+  background: rgb(163 52 31 / 0.08);
+  color: var(--napaka);
+  font-size: var(--step--1);
+  font-weight: 600;
+  line-height: 1.45;
+}

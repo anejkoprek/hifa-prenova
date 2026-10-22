@@ -15,8 +15,9 @@ export interface NadstresekOpts {
   barva: string;
   stranLevo?: boolean;
   stranDesno?: boolean;
+  stranZadaj?: boolean;
   stenaTip?: 'lamele' | 'mehanske' | 'les';
-  /** ob objektu od 6 m, brez sten: stebra ob straneh pomaknjena nazaj, s trikotnima konzolama vzdolž stranic */
+  /** samo box ob objektu, brez sten: stebra ob straneh pomaknjena nazaj, s trikotnima konzolama vzdolž stranic */
   konzole?: boolean;
   lesenStrop?: boolean;
   stenaSmer?: 'vertikalne' | 'horizontalne';
@@ -42,7 +43,7 @@ export function risiNadstresek(o: NadstresekOpts): string {
   const kos = Math.cos((32 * Math.PI) / 180) * 0.5;
   const ksi = Math.sin((32 * Math.PI) / 180) * 0.5;
   const fs = Math.max(W * 0.024, 22);
-  const konz = !!o.konzole && o.postavitev === 'ob-objektu' && Wm >= 6 && !o.stranLevo && !o.stranDesno;
+  const konz = !!o.konzole && o.postavitev === 'ob-objektu' && o.tip === 'box' && !o.stranLevo && !o.stranDesno;
   const yK = konz ? Math.max(1.0, Math.min(Dm * 0.45, Dm - 1.2)) : 0; // globina stebrov s konzolo (od sprednjega roba)
   const aK = konz ? Math.min(Dm * 0.32, 1.7, yK - 0.15) : 0;
   const hK = aK * 0.85;
@@ -139,6 +140,34 @@ export function risiNadstresek(o: NadstresekOpts): string {
     }
     out.push(line([x, y0, z0], [x, y1, z0], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.05 * s))}" style="filter:brightness(0.85)"`));
   };
+  // zadnja stena (samostojen nadstrešek): enako kot stranski, v ravnini zadnjih stebrov
+  const zadnja = () => {
+    const y = Dm - 0.03;
+    const zT = hp + (o.tip === 'enokapnica' ? rise : 0);
+    const z0 = 0.06, x0 = 0.05, x1 = Wm - 0.05;
+    const meh = o.stenaTip === 'mehanske';
+    const lesena = o.stenaTip === 'les';
+    const bl = lesena ? LES : barva;
+    const sid = `${uid}-st-zadaj`;
+    const obris: P3[] = [[x0, y, z0], [x1, y, z0], [x1, y, zT], [x0, y, zT]];
+    defs.push(`<clipPath id="${sid}"><polygon points="${pts(obris)}"/></clipPath>`);
+    const lam: string[] = [`<polygon points="${pts(obris)}" fill="var(--draw-bg)" opacity="0.55"/>`];
+    if (o.stenaSmer === 'horizontalne') {
+      const korak = meh ? 0.11 : lesena ? 0.1 : 0.085;
+      for (let z = z0 + 0.03; z < zT; z += korak) lam.push(line([x0, y, z], [x1, y, z], `stroke="${bl}" stroke-width="${n(Math.max(2, (meh ? 0.05 : lesena ? 0.07 : 0.04) * s))}"`));
+    } else {
+      const korak = meh ? 0.12 : lesena ? 0.1 : 0.09;
+      for (let x = x0 + 0.04; x < x1; x += korak) lam.push(line([x, y, z0], [x, y, zT], `stroke="${bl}" stroke-width="${n(Math.max(2, (meh ? 0.05 : lesena ? 0.07 : 0.035) * s))}"`));
+    }
+    out.push(`<g clip-path="url(#${sid})">${lam.join('')}</g>`);
+    const nP = Math.max(1, Math.ceil((x1 - x0) / 1.5));
+    for (let i = 0; i <= nP; i++) {
+      const x = x0 + ((x1 - x0) * i) / nP;
+      out.push(line([x, y, z0], [x, y, zT], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.06 * s))}" style="filter:brightness(0.85)"`));
+    }
+    out.push(line([x0, y, z0], [x1, y, z0], `stroke="${barva}" stroke-width="${n(Math.max(3, 0.05 * s))}" style="filter:brightness(0.85)"`));
+  };
+  if (o.stranZadaj && !ob) zadnja();
   if (o.stranLevo) stena(0.02);
 
   // s stranskima konzolama stojita stebra ob straneh pomaknjena nazaj, konzola je vzdolž stranice;

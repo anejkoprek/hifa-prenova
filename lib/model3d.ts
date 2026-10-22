@@ -918,10 +918,10 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
   const nagib = Math.atan2(naklon, D);
   const strehaPri = (z: number) => yS + ((yZ - yS) * -z) / D; // spodnji rob strehe na globini z
 
-  // Stranski konzoli (ob objektu, od širine 6 m, brez stranskih sten): stebra ob straneh sta pomaknjena nazaj proti
+  // Stranski konzoli (samo box ob objektu, brez stranskih sten): stebra ob straneh sta pomaknjena nazaj proti
   // objektu, na vrhu imata trikotno konzolo v ravnini stranice (okvir iz materiala konstrukcije, notri lesene letvice),
   // ki nosi streho pred in za stebrom. Spredaj ni stebrov, vmesnega stebra ni.
-  const konz = obObjektu && W >= 6 && n.konzole && !n.stranLevo && !n.stranDesno;
+  const konz = obObjektu && n.tip === 'box' && n.konzole && !n.stranLevo && !n.stranDesno;
   const zK = konz ? -Math.max(1.0, Math.min(D * 0.45, D - 1.2)) : zSt; // z stebrov s konzolo
   const a = konz ? Math.min(D * 0.32, 1.7, -zK - 0.15) : 0; // polovica dolžine konzole ob strehi
   const hK = a * 0.85; // višina konzole
@@ -1066,6 +1066,56 @@ export function modelNadstreska(n: NadstresekStanje, M: Materiali): Model {
       st.add(im);
     }
     st.position.x = x;
+    g.add(st);
+  }
+
+  // zadnja stena (samostojen nadstrešek): okvir s prekati po 1,5 m, polnilo kot pri stranskih
+  if (n.stranZadaj && !obObjektu) {
+    const st = new THREE.Group();
+    const x0 = -W / 2 + 0.12, x1 = W / 2 - 0.12;
+    const dol = x1 - x0;
+    const zS = zadaj + 0.12;
+    const vrhS = yZ - 0.02;
+    const nP = Math.max(1, Math.ceil(dol / 1.5 - 1e-6));
+    st.add(skatla(dol, 0.05, 0.05, M.kovina, 0, 0.1, zS));
+    for (let i = 0; i <= nP; i++) st.add(skatla(0.05, vrhS - 0.08, 0.05, M.kovina, x0 + (dol * i) / nP, (vrhS + 0.08) / 2, zS));
+    const seg: [number, number, number, number][] = [];
+    const m4 = new THREE.Matrix4();
+    if (n.stenaSmer === 'horizontalne') {
+      const korak = meh ? 0.12 : lesStena ? 0.105 : 0.09;
+      for (let y = 0.2; y < vrhS - 0.04; y += korak) seg.push([x0, y, x1, y]);
+      const im = instance(seg, meh ? 0.1 : lesStena ? 0.09 : 0.07, 0.02, matStene);
+      if (meh) {
+        const nag = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.6);
+        for (let i = 0; i < seg.length; i++) {
+          im.getMatrixAt(i, m4);
+          const poz = new THREE.Vector3(), q = new THREE.Quaternion(), sk = new THREE.Vector3();
+          m4.decompose(poz, q, sk);
+          m4.compose(poz, nag, sk);
+          im.setMatrixAt(i, m4);
+        }
+        im.instanceMatrix.needsUpdate = true;
+      }
+      im.position.z = zS;
+      st.add(im);
+    } else {
+      const korak = meh ? 0.13 : lesStena ? 0.105 : 0.1;
+      for (let x = x0 + 0.06; x < x1 - 0.04; x += korak) seg.push([x, 0.13, x, vrhS - 0.04]);
+      const im = instance(seg, meh ? 0.1 : lesStena ? 0.09 : 0.07, 0.02, matStene);
+      if (meh) {
+        const zasuk = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.6);
+        for (let i = 0; i < seg.length; i++) {
+          im.getMatrixAt(i, m4);
+          const poz = new THREE.Vector3(), q = new THREE.Quaternion(), sk = new THREE.Vector3();
+          m4.decompose(poz, q, sk);
+          m4.compose(poz, zasuk.clone().multiply(q), sk);
+          im.setMatrixAt(i, m4);
+        }
+        im.instanceMatrix.needsUpdate = true;
+      }
+      im.position.z = zS;
+      st.add(im);
+    }
     g.add(st);
   }
 
